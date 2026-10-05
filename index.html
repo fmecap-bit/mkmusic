@@ -22,7 +22,7 @@
     --alert:#e0552f;
     --ok:#4fbf8b;
     --r:12px;
-    --transport:76px;
+    --transport:124px;
     --safe:env(safe-area-inset-bottom, 0px);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -161,10 +161,19 @@
     font-size:17px;color:var(--ink-2)
   }
   .ctrls button.on{color:var(--amber)}
-  .play{
-    background:var(--amber)!important;color:#181203!important;width:54px;height:46px;border-radius:12px;
-    font-size:20px;
+  .ctrls svg{width:24px;height:24px;fill:currentColor;display:block}
+  .ctrls .play{
+    width:68px;height:68px;min-width:68px;border-radius:50%;position:relative;overflow:hidden;padding:0;
+    border:2px solid #ff8a3a;box-shadow:0 0 18px rgba(255,120,30,.45);color:#fff;
   }
+  .play .face{
+    position:absolute;inset:0;background:url(icons/icon-512.png) center 48%/230% no-repeat;
+  }
+  .play::after{content:"";position:absolute;inset:0;background:rgba(10,14,20,.38)}
+  .ctrls .play svg{position:relative;z-index:2;width:30px;height:30px;filter:drop-shadow(0 1px 4px #000)}
+  body.playing .play .face{animation:spin 8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){body.playing .play .face{animation:none}}
   .rep-one{position:relative}
   .rep-one::after{
     content:"1";position:absolute;top:6px;right:8px;font-size:9px;font-weight:800;
@@ -225,6 +234,15 @@
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 6h2v12H6zM20 6v12L9.5 12z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM4 6v12l10.5-6z"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></symbol>
+</defs></svg>
+
 <header>
   <div class="bar">
     <img class="logo" src="icons/icon-192.png" alt="" width="28" height="28">
@@ -260,11 +278,11 @@
     <div class="time" id="nowTime">0:00</div>
   </div>
   <div class="ctrls">
-    <button id="btnShuffle" title="Aleatorio">🔀</button>
-    <button id="btnPrev" title="Anterior">⏮</button>
-    <button class="play" id="btnPlay" title="Reproducir">▶</button>
-    <button id="btnNext" title="Siguiente">⏭</button>
-    <button id="btnRepeat" title="Repetir">🔁</button>
+    <button id="btnShuffle" title="Aleatorio" aria-label="Aleatorio"><svg><use href="#i-shuffle"/></svg></button>
+    <button id="btnPrev" title="Anterior" aria-label="Anterior"><svg><use href="#i-prev"/></svg></button>
+    <button class="play" id="btnPlay" title="Reproducir" aria-label="Reproducir"><span class="face"></span><svg><use href="#i-play"/></svg></button>
+    <button id="btnNext" title="Siguiente" aria-label="Siguiente"><svg><use href="#i-next"/></svg></button>
+    <button id="btnRepeat" title="Repetir" aria-label="Repetir"><svg><use href="#i-repeat"/></svg></button>
   </div>
 </div>
 
@@ -523,6 +541,11 @@ function renderList(){
 /* =========================================================
    Reproductor
    ========================================================= */
+function setPlayIcon(on){
+  const b = $('#btnPlay');
+  b.querySelector('use').setAttribute('href', on ? '#i-pause' : '#i-play');
+  const l = on ? 'Pausar' : 'Reproducir'; b.title = l; b.setAttribute('aria-label', l);
+}
 let player = null, ready = false, pending = null;
 let queue = [], order = [], pos = -1, cur = null;
 
@@ -543,12 +566,12 @@ window.onYouTubeIframeAPIReady = function(){
       onStateChange(e){
         if(e.data === YT.PlayerState.PLAYING){
           document.body.classList.add('playing');
-          $('#btnPlay').textContent = '❙❙';
+          setPlayIcon(true);
           grabTitle();
           if(S.wake) wake(true);
         } else {
           document.body.classList.remove('playing');
-          $('#btnPlay').textContent = '▶';
+          setPlayIcon(false);
         }
         if(e.data === YT.PlayerState.ENDED) next(true);
       },
