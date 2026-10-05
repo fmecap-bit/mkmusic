@@ -26,13 +26,15 @@
     --safe:env(safe-area-inset-bottom, 0px);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%}
+  html{margin:0;height:100%}
   body{
+    margin:0;min-height:100%;   /* min-height (no height): con height fijo el padding inferior no alarga el scroll y la barra tapaba las últimas canciones */
     background:var(--bg);
     color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     font-size:15px;line-height:1.45;
-    padding-bottom:calc(var(--transport) + var(--safe) + 8px);
+    /* hueco para la barra del reproductor + el botón flotante "Añadir" (46px + 16px de separación) */
+    padding-bottom:calc(var(--tbar, calc(var(--transport) + var(--safe))) + 72px);
     overscroll-behavior-y:contain;
   }
   button,input,select,textarea{font:inherit;color:inherit}
@@ -56,6 +58,11 @@
   body:not(.playing) .brand i{background:var(--amber-dim);box-shadow:none}
   .brand span{color:var(--ink-2);font-weight:500;font-size:12px;letter-spacing:0}
   .logo{width:28px;height:28px;border-radius:7px;flex:none;align-self:center}
+  /* pantallas muy estrechas (<360px): la cabecera no cabía, la página se ensanchaba y la barra inferior quedaba fuera de pantalla */
+  @media (max-width:359px){
+    .bar{gap:6px;padding-left:10px;padding-right:10px}
+    .brand span{display:none}
+  }
   .bar .grow{flex:1}
   #btnCloud{font-size:18px}
   #btnCloud.off{opacity:.45}
@@ -91,7 +98,7 @@
   /* ---------- Buscador ---------- */
   .search{padding:12px 14px 6px;display:flex;gap:8px;align-items:center}
   .search input{
-    flex:1;background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;
     padding:11px 13px;font-size:15px;
   }
   .search input::placeholder{color:#6c7e8f}
@@ -182,7 +189,7 @@
   /* ---------- FAB ---------- */
   .fab{
     position:fixed;right:16px;z-index:45;
-    bottom:calc(var(--transport) + var(--safe) + 16px);
+    bottom:calc(var(--tbar, calc(var(--transport) + var(--safe))) + 16px);
     background:var(--surface);border:1px solid var(--line);color:var(--ink);
     padding:12px 18px;border-radius:999px;font-weight:700;font-size:14px;
     box-shadow:0 6px 20px rgba(0,0,0,.45);
@@ -200,6 +207,13 @@
   .sheet.on{transform:translateY(0)}
   @media (prefers-reduced-motion:reduce){.sheet{transition:none}}
   .sheet h2{margin:0 0 4px;font-size:17px;font-weight:700}
+  /* cabecera fija de una hoja, con botón para cerrarla siempre a la vista */
+  .sheet-head{
+    position:sticky;top:-16px;z-index:2;display:flex;align-items:center;gap:10px;   /* -16px = relleno superior de .sheet */
+    margin:-16px -16px 10px;padding:10px 16px;background:var(--bg-2);border-bottom:1px solid var(--line);
+  }
+  .sheet-head h2{flex:1;min-width:0;margin:0}
+  .sheet-head .ok{flex:none;min-width:72px;padding:11px 22px}
   .sheet p.hint{margin:0 0 14px;color:var(--ink-2);font-size:13px}
   .sheet textarea,.sheet input[type=text]{
     width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;
@@ -224,7 +238,7 @@
   /* ---------- Avisos ---------- */
   .toast{
     position:fixed;left:50%;transform:translateX(-50%);
-    bottom:calc(var(--transport) + var(--safe) + 72px);z-index:90;
+    bottom:calc(var(--tbar, calc(var(--transport) + var(--safe))) + 72px);z-index:90;
     background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
     padding:10px 16px;border-radius:999px;font-size:13.5px;max-width:88vw;text-align:center;
     opacity:0;pointer-events:none;transition:opacity .2s
@@ -303,7 +317,10 @@
 
 <!-- Buscar en YouTube -->
 <div class="sheet" id="sheetSearch">
-  <h2>Buscar en YouTube</h2>
+  <div class="sheet-head">
+    <h2>Buscar en YouTube</h2>
+    <button class="btn primary ok" data-close>OK</button>
+  </div>
   <p class="hint" id="ysTarget"></p>
   <div class="ysbar">
     <input type="text" id="ysQ" placeholder="Grupo o canción" autocomplete="off" enterkeyhint="search">
@@ -1135,6 +1152,14 @@ function stageTop(){
 }
 window.addEventListener('resize', stageTop);
 
+/* alto real de la barra del reproductor: el hueco inferior de la lista, el botón "Añadir"
+   y los avisos se colocan con esta medida (cambia con el tamaño de letra del móvil) */
+function barSize(){
+  document.documentElement.style.setProperty('--tbar', document.querySelector('.transport').offsetHeight + 'px');
+}
+if('ResizeObserver' in window) new ResizeObserver(barSize).observe(document.querySelector('.transport'));
+window.addEventListener('resize', barSize);
+
 /* ---------- Arranque ---------- */
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -1143,6 +1168,7 @@ renderTabs();
 renderList();
 paintModes();
 stageTop();
+barSize();
 
 if(S.resume){
   const s = findSong(S.resume.listId, S.resume.songId);
