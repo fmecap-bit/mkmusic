@@ -1,0 +1,57 @@
+<!doctype html><meta charset="utf-8">
+<style>
+:root{--bg:#0f1721;--bg2:#141f2b;--surface:#1a2836;--line:#2b3d4d;--ink:#e9f0f7;--ink2:#8fa3b5;--amber:#ffb020}
+*{box-sizing:border-box}body{margin:0;background:#0a0f16;color:var(--ink);font-family:system-ui,Segoe UI,Roboto,sans-serif;padding:18px 16px;width:840px}
+h3{margin:18px 0 8px;font-size:15px}h3 span{color:var(--ink2);font-weight:400;font-size:13px}
+.pair{display:flex;gap:20px}.bar{width:390px;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:6px 14px 12px;position:relative}
+.cap{font-size:11px;color:var(--ink2);margin:0 0 4px 2px}
+.seek{height:3px;background:var(--line);margin:8px -14px 8px;position:relative}.seek i{position:absolute;left:0;top:0;height:3px;width:38%;background:var(--amber)}
+.seek i::after{content:"";position:absolute;right:-6px;top:-4.5px;width:12px;height:12px;border-radius:50%;background:var(--amber)}
+.now{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px}.now b{font-weight:600}.now span{color:var(--ink2);font-size:11.5px}
+.ctr{display:flex;align-items:center;justify-content:space-between}
+svg{width:24px;height:24px;fill:currentColor}
+.ib{width:44px;height:44px;display:grid;place-items:center;color:var(--ink2);border:0;background:none}
+.ib.on{color:var(--amber)}
+.logo{background:url(../../icons/icon-512.png) center 48%/230% no-repeat}
+/* A: disco */
+.A .play{width:68px;height:68px;border-radius:50%;position:relative;border:2px solid #ff8a3a;box-shadow:0 0 18px rgba(255,120,30,.45);overflow:hidden;padding:0}
+.A .play .logo{position:absolute;inset:0}
+.A .play::after{content:"";position:absolute;inset:0;background:rgba(10,14,20,.38)}
+.A .play svg{position:relative;z-index:2;color:#fff;width:30px;height:30px;filter:drop-shadow(0 1px 4px #000)}
+.A.playing .play .logo{animation:spin 8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+/* B: icono-app cuadrado */
+.B .play{width:72px;height:72px;border-radius:19px;position:relative;overflow:hidden;padding:0;box-shadow:0 6px 18px rgba(255,90,30,.4)}
+.B .play .logo{position:absolute;inset:0;background-size:150%;background-position:center 47%}
+.B .play svg{position:absolute;right:6px;bottom:6px;z-index:2;width:26px;height:26px;color:#fff;background:rgba(0,0,0,.55);border-radius:50%;padding:5px}
+.B.playing .play{box-shadow:0 0 0 2px #ffb020,0 6px 22px rgba(255,120,30,.6)}
+/* C: botón degradado + mini icono como carátula */
+.C .play{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#d6221c,#ff8a1f 70%,#ffb020);color:#fff;display:grid;place-items:center;border:0;box-shadow:0 4px 16px rgba(255,100,30,.45)}
+.C .play svg{width:28px;height:28px}
+.C .cover{width:40px;height:40px;border-radius:10px;flex:none}
+.C .now{align-items:center;gap:10px;justify-content:flex-start}.C .now .tt{flex:1}
+</style>
+<svg style="display:none"><defs>
+<symbol id="p" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+<symbol id="pa" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></symbol>
+<symbol id="pv" viewBox="0 0 24 24"><path d="M6 6h2v12H6zM20 6v12L9.5 12z"/></symbol>
+<symbol id="nx" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM4 6v12l10.5-6z"/></symbol>
+<symbol id="sh" viewBox="0 0 24 24"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></symbol>
+<symbol id="rp" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></symbol>
+</defs></svg>
+<div id="root"></div>
+<script>
+const I=(n)=>`<svg><use href="#${n}"/></svg>`;
+function bar(cls,playing){
+  const pl=I(playing?'pa':'p');
+  const now = cls==='C'
+   ? `<div class="now"><div class="logo cover"></div><div class="tt"><b>Queen - Bohemian Rhapsody</b><br><span>Queen</span></div><span>2:14 / 5:55</span></div>`
+   : `<div class="now"><b>Queen - Bohemian Rhapsody</b><span>2:14 / 5:55</span></div>`;
+  const play = cls==='C' ? `<button class="play">${pl}</button>` : `<button class="play"><div class="logo"></div>${pl}</button>`;
+  return `<div><p class="cap">${playing?'Sonando':'En pausa'}</p><div class="bar ${cls} ${playing?'playing':''}"><div class="seek"><i></i></div>${now}
+  <div class="ctr"><button class="ib on">${I('sh')}</button><button class="ib">${I('pv')}</button>${play}<button class="ib">${I('nx')}</button><button class="ib on">${I('rp')}</button></div></div></div>`;
+}
+const V=[['A','Disco','el icono hace de botón redondo, gira mientras suena'],
+         ['B','Icono de app','el icono tal cual (cuadrado redondeado) con un mini play/pausa encima'],
+         ['C','Degradado de marca','botón con los colores del logo; el icono pasa a ser la carátula']];
+document.getElementById('root').innerHTML=V.map(([c,n,d])=>`<h3>${c} · ${n} <span>— ${d}</span></h3><div class="pair">${bar(c,false)}${bar(c,true)}</div>`).join('');
+</script>
