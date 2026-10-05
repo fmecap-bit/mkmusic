@@ -87,6 +87,12 @@
     background:#0d111c url(icons/icon-512.png) center/auto 100% no-repeat}  /* el icono se ve hasta que carga el vídeo */
   #yt{position:absolute;inset:0;width:100%;height:100%;border:0}
   @media (min-width:700px){ .stage{max-width:480px;margin:0 auto} }
+  .stage.collapsed .ratio{aspect-ratio:auto;height:0}
+  .fold{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:32px;
+    background:var(--bg-2);color:var(--ink-2);font-size:12.5px;font-weight:600}
+  .fold svg{width:16px;height:16px;fill:currentColor;transition:transform .2s}
+  .stage:not(.collapsed) .fold svg{transform:rotate(180deg)}
+  .stage.collapsed{border-bottom:0}
 
   /* ---------- Buscador ---------- */
   .search{padding:12px 14px 6px;display:flex;gap:8px;align-items:center}
@@ -235,6 +241,7 @@
 <body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></symbol>
   <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 6h2v12H6zM20 6v12L9.5 12z"/></symbol>
@@ -257,6 +264,7 @@
 
 <div class="stage" id="stage">
   <div class="ratio"><div id="yt"></div></div>
+  <button class="fold" id="btnFold"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg><span></span></button>
 </div>
 
 <div class="search">
@@ -541,6 +549,20 @@ function renderList(){
 /* =========================================================
    Reproductor
    ========================================================= */
+/* Vídeo plegable: oculto mientras navegas por la lista; se abre solo al dar a play.
+   YouTube exige que el reproductor se vea mientras suena, así que solo se puede plegar en pausa. */
+function paintStage(){
+  const c = S.collapsed !== false;
+  $('#stage').classList.toggle('collapsed', c);
+  $('#btnFold span').textContent = c ? 'Mostrar vídeo' : 'Ocultar vídeo';
+  stageTop();
+}
+function showStage(){ if(S.collapsed !== false){ S.collapsed = false; save(); paintStage(); } }
+$('#btnFold').onclick = ()=>{
+  const playing = document.body.classList.contains('playing');
+  if(S.collapsed === false && playing){ toast('YouTube exige ver el vídeo mientras suena. Pausa para ocultarlo.'); return; }
+  S.collapsed = S.collapsed === false; save(); paintStage();
+};
 function setPlayIcon(on){
   const b = $('#btnPlay');
   b.querySelector('use').setAttribute('href', on ? '#i-pause' : '#i-play');
@@ -567,6 +589,7 @@ window.onYouTubeIframeAPIReady = function(){
         if(e.data === YT.PlayerState.PLAYING){
           document.body.classList.add('playing');
           setPlayIcon(true);
+          showStage();
           grabTitle();
           if(S.wake) wake(true);
         } else {
@@ -611,6 +634,7 @@ function play(ref, time){
   save();
   paintNow(s);
   renderList();
+  showStage();
   if(!ready || !player){ pending = {ref, time}; return; }
   player.loadVideoById({videoId: s.id, startSeconds: time||0});
   mediaSession(s);
@@ -630,10 +654,11 @@ function prev(){
   play(queue[order[pos]], 0);
 }
 function toggle(){
+  if(!document.body.classList.contains('playing')) showStage();
   if(!ready || !player.getPlayerState){ toast('El reproductor aún está cargando.'); return; }
   const st = player.getPlayerState();
   if(st === YT.PlayerState.PLAYING) player.pauseVideo();
-  else if(cur) player.playVideo();
+  else if(cur){ showStage(); player.playVideo(); }
   else {
     const rows = filtered();
     if(rows.length) startFrom(rows[0].listId, rows[0].s.id);
@@ -661,7 +686,7 @@ function mediaSession(s){
       artist: artistOf(s),
       artwork: [{src:`https://i.ytimg.com/vi/${s.id}/hqdefault.jpg`, sizes:'480x360', type:'image/jpeg'}]
     });
-    navigator.mediaSession.setActionHandler('play', ()=> player.playVideo());
+    navigator.mediaSession.setActionHandler('play', ()=>{ showStage(); player.playVideo(); });
     navigator.mediaSession.setActionHandler('pause', ()=> player.pauseVideo());
     navigator.mediaSession.setActionHandler('nexttrack', ()=> next(false));
     navigator.mediaSession.setActionHandler('previoustrack', prev);
@@ -1142,7 +1167,7 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
 renderTabs();
 renderList();
 paintModes();
-stageTop();
+paintStage();
 
 if(S.resume){
   const s = findSong(S.resume.listId, S.resume.songId);
