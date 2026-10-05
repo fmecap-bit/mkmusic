@@ -99,6 +99,19 @@
     background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:600}
   .scope.on{background:var(--amber);color:#181203;border-color:var(--amber)}
 
+  /* ---------- Búsqueda en YouTube ---------- */
+  .ysbar{display:flex;gap:8px;margin-bottom:8px}
+  .ysbar input{flex:1;margin:0!important}
+  .ysbar .btn{flex:none;padding:0 18px}
+  .chk{display:flex;align-items:center;gap:8px;color:var(--ink-2);font-size:13px;margin:0 0 6px}
+  .res{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .res:last-child{border-bottom:0}
+  .res img{width:64px;height:48px;border-radius:6px;object-fit:cover;flex:none;background:var(--surface-2)}
+  .res .meta{flex:1;min-width:0}
+  .addb{width:42px;height:42px;border-radius:10px;background:var(--amber);color:#181203;font-weight:800;font-size:18px;flex:none}
+  .addb.done{background:var(--surface-2);color:var(--ok)}
+  .linkbtn{margin-top:12px;padding:10px 16px;border-radius:999px;background:var(--amber);color:#181203;font-weight:700}
+
   /* ---------- Lista ---------- */
   ul.songs{list-style:none;margin:0;padding:4px 8px 10px}
   li.song{
@@ -260,6 +273,7 @@
 <!-- Añadir canciones -->
 <div class="sheet" id="sheetAdd">
   <h2>Añadir canciones</h2>
+  <button class="btn primary" id="goSearch" style="width:100%;margin-bottom:14px">🔎 Buscar en YouTube</button>
   <p class="hint">Pega uno o varios enlaces de YouTube, uno por línea. El título se rellena solo.</p>
   <textarea id="addUrls" placeholder="https://www.youtube.com/watch?v=..."></textarea>
   <input type="text" id="addTitle" placeholder="Título manual (opcional, solo si pegas un enlace)">
@@ -267,6 +281,18 @@
     <button class="btn" data-close>Cancelar</button>
     <button class="btn primary" id="doAdd">Añadir</button>
   </div>
+</div>
+
+<!-- Buscar en YouTube -->
+<div class="sheet" id="sheetSearch">
+  <h2>Buscar en YouTube</h2>
+  <p class="hint" id="ysTarget"></p>
+  <div class="ysbar">
+    <input type="text" id="ysQ" placeholder="Grupo o canción" autocomplete="off" enterkeyhint="search">
+    <button class="btn primary" id="ysGo">Buscar</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="ysMusic"> Solo música</label>
+  <div id="ysRes"></div>
 </div>
 
 <!-- Menú de canción -->
@@ -453,6 +479,13 @@ function renderList(){
     d.innerHTML = $('#q').value.trim()
       ? '<b>Sin resultados</b>Prueba con otra palabra.'
       : '<b>Esta lista está vacía</b><ol><li>Pulsa <b style="display:inline">＋ Añadir</b></li><li>Pega enlaces de YouTube (uno por línea)</li><li>O mueve canciones desde otra lista con ⋮ → Mover</li></ol>';
+    const qv = $('#q').value.trim();
+    if(qv){
+      const b = document.createElement('button');
+      b.className = 'linkbtn'; b.textContent = '🔎 Buscar «' + qv + '» en YouTube';
+      b.onclick = ()=> openSearch(qv);
+      d.appendChild(b);
+    }
     ul.appendChild(d);
     return;
   }
@@ -667,7 +700,7 @@ async function addSongs(text, manualTitle){
   if(!ids.length){ toast('No encontré ningún enlace válido de YouTube.'); return; }
   if(/[?&]list=/.test(text)) toast('Los enlaces de playlist solo añaden la canción, no la lista entera.');
 
-  const target = S.active === FAVVIEW ? S.lists[0] : listById(S.active);
+  const target = targetList();
   let added = 0, dup = 0;
 
   ids.forEach((id, i)=>{
@@ -723,6 +756,104 @@ $('#doAdd').onclick = ()=>{
   closeSheet();
   addSongs(v, t);
 };
+
+/* =========================================================
+   Buscador de YouTube (YouTube Data API v3, necesita API key)
+   Coste: 100 uds por búsqueda de las 10 000 diarias → ~100 búsquedas/día.
+   Se cachean 24 h y solo se busca al pulsar Buscar/Enter.
+   ========================================================= */
+const YT_KEY = (window.MK_CONFIG && MK_CONFIG.YOUTUBE_API_KEY) || '';
+const SC_KEY = 'mkmusic.sc', SC_TTL = 24*3600*1000;
+const decodeHtml = s => { const x = document.createElement('textarea'); x.innerHTML = s; return x.value; };
+const targetList = () => S.active === FAVVIEW ? S.lists[0] : listById(S.active);
+
+function cacheGet(k){
+  try{ const c = JSON.parse(localStorage.getItem(SC_KEY)||'{}'); const e = c[k];
+    return e && Date.now()-e.t < SC_TTL ? e.items : null; }catch(e){ return null; }
+}
+function cachePut(k, items){
+  try{
+    const c = JSON.parse(localStorage.getItem(SC_KEY)||'{}');
+    c[k] = {t:Date.now(), items};
+    const keys = Object.keys(c).sort((a,b)=>c[b].t-c[a].t).slice(0,30);
+    const out = {}; keys.forEach(x=> out[x]=c[x]);
+    localStorage.setItem(SC_KEY, JSON.stringify(out));
+  }catch(e){}
+}
+async function ytSearch(q, musicOnly){
+  const k = norm(q) + '|' + (musicOnly?1:0);
+  const hit = cacheGet(k); if(hit) return hit;
+  const u = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=15' +
+    (musicOnly ? '&videoCategoryId=10' : '') +
+    '&fields=items(id/videoId,snippet(title,channelTitle))&q=' + encodeURIComponent(q) + '&key=' + YT_KEY;
+  const r = await fetch(u);
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok){
+    const reason = j.error && j.error.errors && j.error.errors[0] && j.error.errors[0].reason;
+    const e = new Error((j.error && j.error.message) || ('HTTP ' + r.status)); e.reason = reason; throw e;
+  }
+  const items = (j.items||[]).filter(i=>i.id && i.id.videoId).map(i=>({
+    id:i.id.videoId, title:decodeHtml(i.snippet.title), author:decodeHtml(i.snippet.channelTitle)
+  }));
+  cachePut(k, items);
+  return items;
+}
+function renderResults(items){
+  const box = $('#ysRes'); box.innerHTML = '';
+  if(!items.length){ box.innerHTML = '<p class="hint">Sin resultados. Prueba sin "Solo música" o con otras palabras.</p>'; return; }
+  const l = targetList();
+  items.forEach(it=>{
+    const row = document.createElement('div'); row.className = 'res';
+    const img = document.createElement('img'); img.src = 'https://i.ytimg.com/vi/' + it.id + '/default.jpg'; img.alt = '';
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const tt = document.createElement('div'); tt.className = 't'; tt.textContent = it.title;
+    const aa = document.createElement('div'); aa.className = 'a';
+    aa.textContent = artistOf({title:it.title, author:it.author});
+    meta.append(tt, aa);
+    const b = document.createElement('button'); b.className = 'addb';
+    const has = () => l.songs.some(s=>s.id===it.id);
+    const paint = () => { b.classList.toggle('done', has()); b.textContent = has() ? '✓' : '＋'; b.title = has() ? 'Ya está en la lista' : 'Añadir a la lista'; };
+    b.onclick = ()=>{
+      if(has()) return;
+      l.songs.push({id:it.id, title:it.title, author:it.author, fav:false, bad:false, added:Date.now(), u:Date.now()});
+      save(); renderTabs(); renderList(); paint();
+      toast('Añadida a «' + l.name + '»');
+    };
+    paint();
+    row.append(img, meta, b); box.appendChild(row);
+  });
+}
+async function runSearch(){
+  const q = $('#ysQ').value.trim(); if(!q) return;
+  S.musicOnly = $('#ysMusic').checked; save();
+  const box = $('#ysRes');
+  if(!YT_KEY){
+    box.innerHTML = '<p class="hint">Falta la <b>API key de YouTube</b> en config.js (paso a paso en docs/GUIA.md, sección "Buscador de YouTube"). Mientras tanto puedes pegar enlaces.</p>';
+    return;
+  }
+  box.innerHTML = '<p class="hint">Buscando…</p>';
+  try{ renderResults(await ytSearch(q, S.musicOnly !== false)); }
+  catch(e){
+    const quota = e.reason === 'quotaExceeded' || e.reason === 'dailyLimitExceeded';
+    box.innerHTML = '';
+    const p = document.createElement('p'); p.className = 'hint';
+    p.textContent = quota
+      ? 'Se agotó la cuota diaria de búsquedas de YouTube (se renueva a las 09:00 hora de España aprox.). Mientras tanto pega enlaces.'
+      : 'No se pudo buscar: ' + e.message;
+    box.appendChild(p);
+  }
+}
+function openSearch(q){
+  $('#ysTarget').textContent = 'Se añadirán a la lista: ' + targetList().name;
+  $('#ysMusic').checked = S.musicOnly !== false;
+  $('#ysRes').innerHTML = '';
+  $('#ysQ').value = q || '';
+  openSheet('#sheetSearch');
+  if(q) runSearch(); else setTimeout(()=>$('#ysQ').focus(), 250);
+}
+$('#goSearch').onclick = ()=> openSearch('');
+$('#ysGo').onclick = runSearch;
+$('#ysQ').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); runSearch(); } });
 
 /* menú de canción */
 let menuRef = null;

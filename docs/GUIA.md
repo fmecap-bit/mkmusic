@@ -50,6 +50,23 @@ No necesitas la carpeta `C:\Users\Usuario\Documents\MKMUSIC` para usar la app; s
 
 Estados del ☁: gris = sin conectar · amarillo parpadeante = sincronizando · verde = al día · amarillo fijo = **toca para reconectar** · rojo = error (el mensaje sale en pantalla).
 
+## 4b. Buscador de YouTube (API key)
+
+El buscador usa la YouTube Data API v3. Necesita una **API key** (gratis, 1 paso más en el mismo proyecto de Google Cloud):
+
+1. **APIs y servicios → Biblioteca** → **YouTube Data API v3** → **Habilitar**.
+2. **APIs y servicios → Credenciales → Crear credenciales → Clave de API**.
+3. En la clave → **Restricciones**:
+   - *Restricciones de aplicaciones*: **Sitios web (referentes HTTP)** → añade `https://fmecap-bit.github.io/*` (y `http://localhost:8000/*` si pruebas en local).
+   - *Restricciones de API*: **Restringir clave** → solo **YouTube Data API v3**.
+4. Copia la clave y pégala en `config.js` en `YOUTUBE_API_KEY`.
+
+Notas:
+- La clave queda visible en el código de la web (es inevitable en una app sin servidor). **Las restricciones del paso 3 son lo que la protege**; sin ellas cualquiera podría gastarte la cuota.
+- Cuota gratuita: 10 000 unidades/día; cada búsqueda cuesta 100 → **~100 búsquedas al día**. Los resultados se guardan 24 h en el dispositivo, y solo se busca al pulsar *Buscar*.
+- Se filtran vídeos que no permiten reproducirse fuera de YouTube. "Solo música" limita a la categoría Música; desmárcalo si no aparece lo que buscas (p. ej. directos subidos como "Entretenimiento").
+- Si se agota la cuota, la app lo avisa y sigues pudiendo pegar enlaces.
+
 ## 5. Instalar como app
 
 - **Android (Chrome)**: menú ⋮ → **Instalar aplicación** / *Añadir a pantalla de inicio*.
@@ -80,6 +97,8 @@ y abre `http://localhost:8000`. Nunca abras `index.html` con doble clic (`file:/
 | `origin_mismatch` / `redirect_uri_mismatch` | El origen del paso 2.6 no coincide exactamente (sin `/mkmusic`, sin `/` final, `https`). |
 | "Acceso bloqueado: la app no ha completado la verificación" | Tu cuenta no está en *usuarios de prueba* (paso 2.5). |
 | `Drive: Google Drive API has not been used…` / 403 | No habilitaste Drive API (paso 2.2) o tardó unos minutos en propagarse. |
+| "Falta la API key de YouTube" | `YOUTUBE_API_KEY` vacío en `config.js` (sección 4b). |
+| Búsqueda: `API key not valid` / `referer ... blocked` | La restricción de dominio no coincide (`https://fmecap-bit.github.io/*`) o la API no está habilitada. |
 | Toast "Falta el Client ID" | `config.js` vacío o Pages aún no se ha actualizado (recarga forzada: Ctrl+F5). |
 | ☁ rojo al volver a tener conexión | Toca ☁ para reintentar. |
 | Cambios no aparecen en la app instalada | Cierra y reabre la app; el service worker usa "red primero". |
