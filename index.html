@@ -83,7 +83,8 @@
 
   /* ---------- Reproductor ---------- */
   .stage{position:sticky;top:var(--stageTop,0);z-index:30;background:#000;border-bottom:1px solid var(--line)}
-  .stage .ratio{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;transition:height .22s ease}
+  .stage .ratio{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;
+    background:#0d111c url(icons/icon-512.png) center/auto 100% no-repeat}  /* el icono se ve hasta que carga el vídeo */
   #yt{position:absolute;inset:0;width:100%;height:100%;border:0}
   @media (min-width:700px){ .stage{max-width:480px;margin:0 auto} }
 
@@ -115,7 +116,9 @@
   .star{font-size:16px;padding:6px;color:#4d6072;flex:none}
   .star.on{color:var(--amber)}
   .more{font-size:18px;padding:6px 8px;color:var(--ink-2);flex:none}
-  .empty{padding:44px 26px;text-align:center;color:var(--ink-2)}
+  .empty{padding:22px 26px;text-align:center;color:var(--ink-2)}
+  .empty ol{text-align:left;max-width:290px;margin:12px auto 0;padding-left:20px;font-size:13.5px}
+  .empty ol li{margin:4px 0}
   .empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
 
   /* ---------- Barra de transporte ---------- */
@@ -449,7 +452,7 @@ function renderList(){
     d.className = 'empty';
     d.innerHTML = $('#q').value.trim()
       ? '<b>Sin resultados</b>Prueba con otra palabra.'
-      : '<b>Lista vacía</b>Pulsa “Añadir” y pega un enlace de YouTube.';
+      : '<b>Esta lista está vacía</b><ol><li>Pulsa <b style="display:inline">＋ Añadir</b></li><li>Pega enlaces de YouTube (uno por línea)</li><li>O mueve canciones desde otra lista con ⋮ → Mover</li></ol>';
     ul.appendChild(d);
     return;
   }
