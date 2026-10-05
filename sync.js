@@ -75,7 +75,7 @@ const Cloud = (() => {
     };
     for(const l of S.lists){
       check(l, l.name + '|' + l.songs.map(s => s.id).join(','));
-      for(const s of l.songs) check(s, (s.title||'') + '|' + (s.author||'') + '|' + (s.fav ? 1 : 0));
+      for(const s of l.songs) check(s, (s.title||'') + '|' + (s.author||'') + '|' + (s.artist||'') + '|' + (s.fav ? 1 : 0));
     }
     return changed;
   }

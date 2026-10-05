@@ -94,6 +94,9 @@
     padding:11px 13px;font-size:15px;
   }
   .search input::placeholder{color:#6c7e8f}
+  .scope{flex:none;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink-2);font-size:13px;font-weight:600}
+  .scope.on{background:var(--amber);color:#181203;border-color:var(--amber)}
 
   /* ---------- Lista ---------- */
   ul.songs{list-style:none;margin:0;padding:4px 8px 10px}
@@ -223,7 +226,8 @@
 </div>
 
 <div class="search">
-  <input id="q" type="search" placeholder="Buscar en esta lista" autocomplete="off">
+  <input id="q" type="search" placeholder="Canción o grupo" autocomplete="off">
+  <button class="scope" id="btnScope" title="Buscar en todas las listas">Todas</button>
 </div>
 
 <ul class="songs" id="list"></ul>
@@ -270,6 +274,7 @@
   <button class="menu-item" id="mUp"><span class="k">↑</span><span>Subir en la lista</span></button>
   <button class="menu-item" id="mDown"><span class="k">↓</span><span>Bajar en la lista</span></button>
   <button class="menu-item" id="mMove"><span class="k">→</span><span>Mover a otra lista</span></button>
+  <button class="menu-item" id="mArtist"><span class="k">♪</span><span>Editar grupo / artista</span></button>
   <button class="menu-item" id="mYT"><span class="k">↗</span><span>Abrir en YouTube</span></button>
   <button class="menu-item danger" id="mDel"><span class="k">🗑</span><span>Quitar de la lista</span></button>
 </div>
@@ -384,13 +389,24 @@ function viewSongs(){
   const l = listById(S.active) || S.lists[0];
   return l.songs.map(s => ({s, listId:l.id}));
 }
+const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+/* Grupo/artista: el editado a mano; si no, "Grupo - Canción" del título; si no, el canal sin "- Topic"/VEVO/Official. */
+function artistOf(s){
+  if(s.artist) return s.artist;
+  const m = (s.title||'').match(/^(.{2,60}?)\s[-–—]\s.+/);
+  if(m) return m[1].trim();
+  return (s.author||'').replace(/\s*-\s*Topic$/i,'').replace(/VEVO$/i,'').replace(/\s*(official|oficial).*$/i,'').trim();
+}
 function filtered(){
-  const q = $('#q').value.trim().toLowerCase();
-  const all = viewSongs();
-  if(!q) return all;
-  return all.filter(x =>
-    (x.s.title||'').toLowerCase().includes(q) ||
-    (x.s.author||'').toLowerCase().includes(q));
+  const words = norm($('#q').value).split(/\s+/).filter(Boolean);
+  if(!words.length) return viewSongs();
+  const all = S.searchAll
+    ? S.lists.flatMap(l => l.songs.map(s => ({s, listId:l.id})))
+    : viewSongs();
+  return all.filter(x=>{
+    const hay = norm((x.s.title||'') + ' ' + (x.s.author||'') + ' ' + artistOf(x.s));
+    return words.every(w => hay.includes(w));
+  });
 }
 function findSong(listId, songId){
   const l = listById(listId); if(!l) return null;
@@ -450,7 +466,7 @@ function renderList(){
     meta.className = 'meta';
     const t = document.createElement('div'); t.className='t'; t.textContent = s.title || 'Cargando título…';
     const a = document.createElement('div'); a.className='a';
-    a.textContent = s.bad ? 'No se puede reproducir aquí' : (s.author || '');
+    a.textContent = s.bad ? 'No se puede reproducir aquí' : (artistOf(s) + (S.searchAll && $('#q').value.trim() ? ' · ' + (listById(listId)||{}).name : ''));
     meta.append(t,a);
 
     const star = document.createElement('button');
@@ -583,7 +599,7 @@ function mediaSession(s){
   try{
     navigator.mediaSession.metadata = new MediaMetadata({
       title: s.title || 'MkMusic',
-      artist: s.author || '',
+      artist: artistOf(s),
       artwork: [{src:`https://i.ytimg.com/vi/${s.id}/hqdefault.jpg`, sizes:'480x360', type:'image/jpeg'}]
     });
     navigator.mediaSession.setActionHandler('play', ()=> player.playVideo());
@@ -711,7 +727,7 @@ function openSong(listId, songId){
   menuRef = {listId, songId};
   const s = findSong(listId, songId);
   $('#songTitle').textContent = s.title || 'Canción';
-  $('#songSub').textContent = s.author || '';
+  $('#songSub').textContent = artistOf(s);
   $('#mFav').querySelector('span:last-child').textContent = s.fav ? 'Quitar de favoritas' : 'Marcar como favorita';
   const inFav = S.active === FAVVIEW;
   $('#mUp').style.display = inFav ? 'none' : '';
@@ -732,6 +748,18 @@ function moveBy(d){
 }
 $('#mUp').onclick = ()=>{ moveBy(-1); };
 $('#mDown').onclick = ()=>{ moveBy(1); };
+$('#mArtist').onclick = ()=>{
+  const s = findSong(menuRef.listId, menuRef.songId);
+  const v = prompt('Grupo o artista (vacío = automático):', artistOf(s));
+  if(v === null) return;
+  s.artist = v.trim();
+  if(!s.artist) delete s.artist;
+  save(); renderList(); closeSheet();
+};
+$('#btnScope').onclick = ()=>{
+  S.searchAll = !S.searchAll; save(); paintModes(); renderList();
+  toast(S.searchAll ? 'Buscando en todas las listas' : 'Buscando solo en esta lista');
+};
 $('#mYT').onclick = ()=>{
   window.open('https://www.youtube.com/watch?v=' + menuRef.songId, '_blank');
   closeSheet();
@@ -908,6 +936,7 @@ function paintModes(){
   r.classList.toggle('on', S.repeat!=='off');
   r.classList.toggle('rep-one', S.repeat==='one');
   $('#btnWake').style.color = S.wake ? 'var(--amber)' : '';
+  $('#btnScope').classList.toggle('on', !!S.searchAll);
 }
 
 /* pantalla encendida */
