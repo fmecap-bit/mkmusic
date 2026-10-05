@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f1721">
-<title>Mkmusic</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f1721'/><path d='M38 22v40a13 13 0 1 0 8 12V38l24-6V22z' fill='%23ffb020'/></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>MkMusic</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <style>
   :root{
     --bg:#0f1721;
@@ -53,7 +55,16 @@
   }
   body:not(.playing) .brand i{background:var(--amber-dim);box-shadow:none}
   .brand span{color:var(--ink-2);font-weight:500;font-size:12px;letter-spacing:0}
+  .logo{width:28px;height:28px;border-radius:7px;flex:none;align-self:center}
   .bar .grow{flex:1}
+  #btnCloud{font-size:18px}
+  #btnCloud.off{opacity:.45}
+  #btnCloud.ok{color:var(--ok)}
+  #btnCloud.syncing{color:var(--amber);animation:pulse 1s infinite}
+  #btnCloud.auth{color:var(--amber)}
+  #btnCloud.error{color:var(--alert)}
+  @keyframes pulse{50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){#btnCloud.syncing{animation:none}}
   .icon-btn{
     width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
     font-size:17px;color:var(--ink-2);border:1px solid transparent;
@@ -73,15 +84,8 @@
   /* ---------- Reproductor ---------- */
   .stage{position:sticky;top:var(--stageTop,0);z-index:30;background:#000;border-bottom:1px solid var(--line)}
   .stage .ratio{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;transition:height .22s ease}
-  .stage.folded .ratio{aspect-ratio:auto;height:4px}
   #yt{position:absolute;inset:0;width:100%;height:100%;border:0}
-  .fold{
-    position:absolute;right:8px;bottom:8px;z-index:2;
-    background:rgba(10,14,20,.72);border:1px solid var(--line);
-    padding:4px 10px;border-radius:999px;font-size:12px;color:var(--ink);
-  }
-  .stage.folded .fold{position:static;display:block;width:100%;border:0;border-radius:0;
-    background:var(--bg-2);padding:6px;text-align:center;color:var(--ink-2);font-size:12px}
+  @media (min-width:700px){ .stage{max-width:480px;margin:0 auto} }
 
   /* ---------- Buscador ---------- */
   .search{padding:12px 14px 6px;display:flex;gap:8px;align-items:center}
@@ -204,8 +208,10 @@
 
 <header>
   <div class="bar">
-    <div class="brand"><i></i>Mkmusic <span id="count"></span></div>
+    <img class="logo" src="icons/icon-192.png" alt="" width="28" height="28">
+    <div class="brand"><i></i>MkMusic <span id="count"></span></div>
     <div class="grow"></div>
+    <button class="icon-btn off" id="btnCloud" title="Sincronizar con Google Drive">☁</button>
     <button class="icon-btn" id="btnWake" title="Mantener pantalla encendida">☀</button>
     <button class="icon-btn" id="btnCfg" title="Ajustes">⚙</button>
   </div>
@@ -214,7 +220,6 @@
 
 <div class="stage" id="stage">
   <div class="ratio"><div id="yt"></div></div>
-  <button class="fold" id="btnFold">Ocultar vídeo</button>
 </div>
 
 <div class="search">
@@ -290,6 +295,7 @@
   <h2>Ajustes</h2>
   <p class="hint" id="cfgInfo"></p>
   <button class="menu-item" id="cRename"><span class="k">✎</span><span>Renombrar esta lista</span></button>
+  <button class="menu-item" id="cOff"><span class="k">☁</span><span>Desconectar Google Drive</span></button>
   <button class="menu-item" id="cExport"><span class="k">↓</span><span>Exportar copia de seguridad</span></button>
   <button class="menu-item" id="cImport"><span class="k">↑</span><span>Importar copia de seguridad</span></button>
   <button class="menu-item danger" id="cDelList"><span class="k">🗑</span><span>Borrar esta lista</span></button>
@@ -298,14 +304,16 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="config.js"></script>
+<script src="sync.js"></script>
 <script>
 /* =========================================================
-   Mkmusic — listas propias sobre YouTube. Sin servidor.
-   Datos en localStorage del navegador. Exporta de vez en cuando.
+   MkMusic — listas propias sobre YouTube. Sin servidor.
+   Datos en localStorage; opcionalmente sincronizados con Google Drive (sync.js).
    ========================================================= */
 
 const KEY = 'mkmusic.v1';
-const SCHEMA = 1;
+const SCHEMA = 2;
 const FAVVIEW = '__fav';
 
 /* ---------- Estado ---------- */
@@ -316,6 +324,7 @@ function blank(){
     active: null,
     shuffle: false,
     repeat: 'all',            // 'off' | 'all' | 'one'
+    deleted: [],              // lápidas para la sincronización: {k, at}
     resume: null,             // {listId, songId, time}
     wake: false
   };
@@ -329,15 +338,19 @@ try{
   if(!S || !Array.isArray(S.lists) || !S.lists.length) S = blank();
 }catch(e){ S = blank(); }
 if(!S.active) S.active = S.lists[0].id;
+if(!Array.isArray(S.deleted)) S.deleted = [];
+S.v = SCHEMA;
 
 let saveT = null;
 function save(){
   clearTimeout(saveT);
   saveT = setTimeout(()=>{
+    if(Cloud.stamp(S)) Cloud.touch();
     try{ localStorage.setItem(KEY, JSON.stringify(S)); }
     catch(e){ toast('No se pudo guardar. Exporta una copia.'); }
   }, 120);
 }
+function tomb(k){ S.deleted.push({k, at:Date.now()}); Cloud.touch(); }
 
 /* ---------- Utilidades ---------- */
 const $ = s => document.querySelector(s);
@@ -569,7 +582,7 @@ function mediaSession(s){
   if(!('mediaSession' in navigator) || !s) return;
   try{
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: s.title || 'Mkmusic',
+      title: s.title || 'MkMusic',
       artist: s.author || '',
       artwork: [{src:`https://i.ytimg.com/vi/${s.id}/hqdefault.jpg`, sizes:'480x360', type:'image/jpeg'}]
     });
@@ -644,7 +657,7 @@ async function addSongs(text, manualTitle){
       id,
       title: (ids.length===1 && manualTitle) ? manualTitle : '',
       author: '',
-      fav:false, bad:false, added:Date.now()
+      fav:false, bad:false, added:Date.now(), u:Date.now()
     });
     added++;
   });
@@ -728,6 +741,7 @@ $('#mDel').onclick = ()=>{
   if(!confirm('¿Quitar "' + (s.title||'esta canción') + '" de la lista?')) return;
   const l = listById(menuRef.listId);
   l.songs = l.songs.filter(x=>x.id!==menuRef.songId);
+  tomb('S:' + l.id + ':' + menuRef.songId);
   if(cur && cur.songId===menuRef.songId) { cur = null; paintNow(null); }
   save(); renderTabs(); renderList(); closeSheet();
 };
@@ -743,8 +757,9 @@ $('#mMove').onclick = ()=>{
       const from = listById(menuRef.listId);
       const s = from.songs.find(x=>x.id===menuRef.songId);
       if(l.songs.some(x=>x.id===s.id)){ toast('Ya estaba en ' + l.name); }
-      else l.songs.push(s);
+      else { s.u = Date.now(); l.songs.push(s); }
       from.songs = from.songs.filter(x=>x.id!==menuRef.songId);
+      tomb('S:' + from.id + ':' + s.id);
       save(); renderTabs(); renderList(); closeSheet();
       toast('Movida a ' + l.name);
     };
@@ -780,7 +795,8 @@ $('#doList').onclick = ()=>{
 $('#btnCfg').onclick = ()=>{
   const total = S.lists.reduce((n,l)=>n+l.songs.length,0);
   $('#cfgInfo').textContent = total + ' canciones en ' + S.lists.length +
-    (S.lists.length===1?' lista':' listas') + '. Se guardan en este navegador.';
+    (S.lists.length===1?' lista':' listas') + '. ' + cloudInfo();
+  $('#cOff').style.display = Cloud.connected ? '' : 'none';
   const solo = S.lists.length <= 1;
   $('#cDelList').style.display = solo ? 'none' : '';
   openSheet('#sheetCfg');
@@ -794,6 +810,7 @@ $('#cDelList').onclick = ()=>{
   if(!l) { closeSheet(); return; }
   if(!confirm('¿Borrar la lista "' + l.name + '" y sus ' + l.songs.length + ' canciones?')) return;
   S.lists = S.lists.filter(x=>x.id!==l.id);
+  tomb('L:' + l.id);
   S.active = S.lists[0].id;
   save(); renderTabs(); renderList(); closeSheet();
 };
@@ -815,14 +832,60 @@ $('#fileIn').onchange = e=>{
       const d = JSON.parse(r.result);
       if(!d.lists || !Array.isArray(d.lists)) throw 0;
       if(!confirm('Esto sustituye tus listas actuales por las del archivo. ¿Continuar?')) return;
-      S = Object.assign(blank(), d);
+      const keep = {shuffle:S.shuffle, repeat:S.repeat, wake:S.wake};
+      const gone = [];
+      S.lists.forEach(l=>{ gone.push('L:'+l.id); l.songs.forEach(s=>gone.push('S:'+l.id+':'+s.id)); });
+      const now = Date.now();
+      d.lists.forEach(l=>{ l.u = now; (l.songs||[]).forEach(s=>{ s.u = now; }); });
+      S = Object.assign(blank(), d, keep);
+      S.resume = null;
+      S.deleted = gone.map(k=>({k, at:now - 1}));
       S.active = S.lists[0].id;
+      Cloud.touch();
       save(); renderTabs(); renderList(); closeSheet();
       toast('Copia importada.');
-    }catch(err){ toast('El archivo no es una copia válida de Mkmusic.'); }
+    }catch(err){ toast('El archivo no es una copia válida de MkMusic.'); }
   };
   r.readAsText(f);
   e.target.value = '';
+};
+
+/* ---------- Google Drive ---------- */
+let cloudMsg = '';
+function cloudInfo(){
+  if(!Cloud.configured) return 'Solo en este navegador (falta configurar Google, ver docs/GUIA.md).';
+  return Cloud.connected ? ('Drive: ' + (cloudMsg || 'conectado') + '.') : 'Solo en este navegador. Toca ☁ para sincronizar con Drive.';
+}
+Cloud.init({
+  getDoc(){
+    Cloud.stamp(S);
+    const lists = JSON.parse(JSON.stringify(S.lists));
+    lists.forEach(l=>l.songs.forEach(s=>{ delete s.bad; }));
+    return {v:SCHEMA, updatedAt:Date.now(), lists, deleted:S.deleted.slice()};
+  },
+  applyDoc(doc){
+    S.lists = doc.lists.length ? doc.lists : blank().lists;
+    S.deleted = doc.deleted || [];
+    if(S.active !== FAVVIEW && !listById(S.active)) S.active = S.lists[0].id;
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+    renderTabs(); renderList();
+  },
+  onStatus(st, msg){
+    cloudMsg = msg;
+    const b = $('#btnCloud');
+    b.className = 'icon-btn ' + st;
+    b.title = msg || (st==='syncing' ? 'Sincronizando…' : 'Sincronizar con Google Drive');
+    if(st==='auth' && msg) toast(msg);
+  },
+  toast
+});
+$('#btnCloud').onclick = ()=>{
+  if(!Cloud.configured){ toast('Falta el Client ID de Google (config.js). Mira docs/GUIA.md.'); return; }
+  Cloud.syncNow();
+};
+$('#cOff').onclick = ()=>{
+  if(!confirm('Se dejará de sincronizar con Drive y se revocará el permiso. Tus listas siguen en este dispositivo y en Drive. ¿Continuar?')) return;
+  Cloud.disconnect(); closeSheet(); toast('Drive desconectado.');
 };
 
 /* controles */
@@ -846,13 +909,6 @@ function paintModes(){
   r.classList.toggle('rep-one', S.repeat==='one');
   $('#btnWake').style.color = S.wake ? 'var(--amber)' : '';
 }
-
-/* plegar vídeo */
-$('#btnFold').onclick = ()=>{
-  const st = $('#stage');
-  st.classList.toggle('folded');
-  $('#btnFold').textContent = st.classList.contains('folded') ? 'Mostrar vídeo' : 'Ocultar vídeo';
-};
 
 /* pantalla encendida */
 let wl = null;
@@ -894,6 +950,9 @@ function stageTop(){
 window.addEventListener('resize', stageTop);
 
 /* ---------- Arranque ---------- */
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 renderTabs();
 renderList();
 paintModes();

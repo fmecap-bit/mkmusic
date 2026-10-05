@@ -2,6 +2,8 @@
 
 Estado actual del repo: prototipo de un solo archivo (`index.html`, 919 líneas), listas propias sobre el reproductor oficial de YouTube (IFrame API), datos en `localStorage`, exportación/importación JSON manual. `mkmusic.html` es una copia idéntica de `index.html` (borrar una).
 
+> **Actualizado:** decisiones tomadas = YouTube, Android + PC, carpeta oculta (`drive.appdata`), PWA estática. Implementado: login Google (OAuth), sync con Drive, PWA, logo. Pasos de puesta en marcha en `docs/GUIA.md`.
+
 ## 1. Cambios sobre la petición original (puntos críticos)
 
 | Petición | Problema | Alternativa |
