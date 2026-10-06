@@ -250,6 +250,39 @@
     opacity:0;pointer-events:none;transition:opacity .2s
   }
   .toast.on{opacity:1}
+
+  /* =====================================================================
+     Pantalla horizontal (tablet, MBUX, móvil girado): reproductor fijo a la
+     izquierda (vídeo + controles) y listas + canciones a la derecha.
+     Se adapta a cualquier proporción: el vídeo mantiene 16:9 y el resto del hueco
+     queda en el color de la app (no en negro).
+     ===================================================================== */
+  @media (orientation:landscape) and (min-width:640px){
+    :root{--deck:46vw}
+    body{padding-left:var(--deck);padding-bottom:92px}
+    .stage{
+      position:fixed;left:0;top:0;width:var(--deck);max-width:none;margin:0;
+      height:calc(100vh - var(--tbar, 124px));height:calc(100dvh - var(--tbar, 124px));
+      display:flex;flex-direction:column;justify-content:center;
+      background:var(--bg);border-bottom:0;border-right:1px solid var(--line);
+    }
+    .stage .ratio,.stage.collapsed .ratio{aspect-ratio:16/9;height:auto;width:100%;flex:none}
+    .stage .fold{display:none}
+    .transport{right:auto;width:var(--deck);border-right:1px solid var(--line)}
+    .fab{bottom:16px}
+    .toast{left:calc(var(--deck) + (100vw - var(--deck)) / 2);bottom:84px}
+    .sheet{left:var(--deck)}
+    header{position:sticky;top:0}
+  }
+  /* pantallas táctiles grandes (coche): zonas de pulsación mayores */
+  @media (orientation:landscape) and (min-width:640px) and (pointer:coarse){
+    li.song{padding:12px 6px 12px 10px}
+    .thumb{width:60px;height:60px}
+    .t{font-size:17px}.a{font-size:14px}
+    .star,.more{padding:12px 14px;font-size:20px}
+    .tab{padding:10px 16px;font-size:15px}
+    .icon-btn{width:48px;height:48px}
+  }
 </style>
 </head>
 <body>

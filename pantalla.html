@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MkMusic · medir pantalla</title>
+<style>
+  html,body{margin:0;height:100%;background:#0f1721;color:#e9f0f7;font-family:system-ui,Segoe UI,sans-serif}
+  .frame{position:fixed;inset:0;border:6px solid #ffb020;display:grid;place-items:center;text-align:center}
+  .frame::before,.frame::after{content:"";position:absolute;left:0;right:0;height:1px;background:#2b3d4d}
+  .frame::before{top:50%}.frame::after{display:none}
+  .v{position:absolute;top:0;bottom:0;left:50%;width:1px;background:#2b3d4d}
+  .tl,.tr,.bl,.br{position:absolute;font-size:12px;color:#8fa3b5;padding:8px}
+  .tl{top:0;left:0}.tr{top:0;right:0}.bl{bottom:0;left:0}.br{bottom:0;right:0}
+  .big{font-size:min(9vw,16vh);font-weight:800;color:#ffb020;line-height:1}
+  .s{font-size:min(3.4vw,5vh);color:#e9f0f7;margin-top:10px}
+  .m{font-size:min(2.4vw,3.6vh);color:#8fa3b5;margin-top:8px;max-width:80%}
+</style></head>
+<body><div class="frame"><div class="v"></div>
+  <div class="tl">↖ esquina sup. izq.</div><div class="tr">esquina sup. der. ↗</div>
+  <div class="bl">↙ esquina inf. izq.</div><div class="br">esquina inf. der. ↘</div>
+  <div><div class="big" id="wh">…</div><div class="s" id="ar"></div><div class="m" id="more"></div>
+  <div class="m">Haz una foto a esta pantalla en el coche y envíamela.<br>El borde ámbar es la zona útil: si ves bandas negras fuera, las pone el coche.</div></div>
+</div>
+<script>
+function g(a,b){return b?g(b,a%b):a}
+function upd(){
+  const w=innerWidth,h=innerHeight,r=(w/h).toFixed(2);
+  document.getElementById('wh').textContent=w+' × '+h;
+  document.getElementById('ar').textContent='proporción '+r+':1 · '+(w>=h?'horizontal':'vertical');
+  document.getElementById('more').textContent='pantalla '+screen.width+'×'+screen.height+' · zoom/DPR '+devicePixelRatio+
+    ' · '+(matchMedia('(pointer:coarse)').matches?'táctil':'ratón')+' · '+(matchMedia('(display-mode:standalone)').matches?'app instalada':'navegador')+
+    ' · '+navigator.userAgent.slice(0,90);
+}
+addEventListener('resize',upd);addEventListener('orientationchange',upd);upd();
+</script></body></html>
