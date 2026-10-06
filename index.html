@@ -283,6 +283,24 @@
     .tab{padding:10px 16px;font-size:15px}
     .icon-btn{width:48px;height:48px}
   }
+
+  /* Interfaz grande (Ajustes): pantallas pequeñas o lejanas, p. ej. el coche */
+  html.big li.song{padding:12px 6px 12px 10px}
+  html.big .thumb{width:62px;height:62px}
+  html.big .t{font-size:18px}html.big .a{font-size:14.5px}
+  html.big .star,html.big .more{padding:12px 14px;font-size:22px}
+  html.big .tab{padding:11px 18px;font-size:16px}
+  html.big .icon-btn{width:52px;height:52px;font-size:20px}
+  html.big .search input{font-size:18px;padding:14px 15px}
+  html.big .scope{font-size:15px;padding:12px 16px}
+  html.big .now .t{font-size:17px}html.big .now .time{font-size:14px}
+  html.big .ctrls button{height:60px;min-width:60px}
+  html.big .ctrls svg{width:32px;height:32px}
+  html.big .ctrls .play{width:88px;height:88px;min-width:88px}
+  html.big .ctrls .play svg{width:40px;height:40px}
+  html.big .fab{font-size:17px;padding:15px 22px}
+  html.big .menu-item{font-size:17px;padding:17px 8px}
+  html.big .btn{font-size:17px;padding:16px}
 </style>
 </head>
 <body>
@@ -404,6 +422,7 @@
 <div class="sheet" id="sheetCfg">
   <h2>Ajustes</h2>
   <p class="hint" id="cfgInfo"></p>
+  <button class="menu-item" id="cBig"><span class="k">🔍</span><span></span></button>
   <button class="menu-item" id="cRename"><span class="k">✎</span><span>Renombrar esta lista</span></button>
   <button class="menu-item" id="cOff"><span class="k">☁</span><span>Desconectar Google Drive</span></button>
   <button class="menu-item" id="cExport"><span class="k">↓</span><span>Exportar copia de seguridad</span></button>
@@ -1147,6 +1166,14 @@ $('#cOff').onclick = ()=>{
   if(!confirm('Se dejará de sincronizar con Drive y se revocará el permiso. Tus listas siguen en este dispositivo y en Drive. ¿Continuar?')) return;
   Cloud.disconnect(); closeSheet(); toast('Drive desconectado.');
 };
+
+/* interfaz grande */
+function paintBig(){
+  document.documentElement.classList.toggle('big', !!S.big);
+  $('#cBig span:last-child').textContent = 'Interfaz grande: ' + (S.big ? 'sí' : 'no');
+}
+$('#cBig').onclick = ()=>{ S.big = !S.big; save(); paintBig(); stageTop(); };
+paintBig();
 
 /* controles */
 $('#btnPlay').onclick = toggle;
