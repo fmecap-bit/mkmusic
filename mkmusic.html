@@ -223,6 +223,12 @@
   }
   body.land.vfold .stage{align-self:stretch}
   body.land.vfold .transport{border-top:1px solid var(--line);padding-top:0}
+  /* vídeo oculto: título y controles en una sola fila */
+  body.land.vfold .transport{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px}
+  body.land.vfold .seek{grid-column:1 / -1}
+  body.land.vfold .now{padding:0}
+  body.land.vfold .ctrls{padding:0;gap:6px}
+  body.land.vfold .ctrls button{height:40px}
   body.land .ctrls button{height:44px;min-width:48px}
   body.land .stage .ratio{width:min(100%, calc(34vh * 16 / 9));margin:0 auto}
   body.land .fab{bottom:14px;right:auto;left:14px}
