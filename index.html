@@ -252,27 +252,52 @@
   .toast.on{opacity:1}
 
   /* =====================================================================
-     Pantalla horizontal (tablet, MBUX, móvil girado): reproductor fijo a la
-     izquierda (vídeo + controles) y listas + canciones a la derecha.
-     Se adapta a cualquier proporción: el vídeo mantiene 16:9 y el resto del hueco
-     queda en el color de la app (no en negro).
+     Pantalla horizontal (tablet, MBUX, móvil girado).
+     Columna izquierda fija: cabecera (MkMusic + iconos) · vídeo · controles.
+     Columna derecha: listas y, debajo, las canciones.
+     El título y el tiempo salen de la columna izquierda para dar alto al vídeo;
+     el tiempo se muestra en la fila de la canción que suena (.rowtime).
+     --barh / --tbar / --availh los mide barSize(): alto de cabecera, de controles
+     y hueco que queda para el vídeo. El vídeo mantiene 16:9 y nunca los pisa.
      ===================================================================== */
+  .rowtime{display:none}
+  :root{--deckmin:336px}
+  html.big{--deckmin:400px}
   @media (orientation:landscape) and (min-width:640px){
     :root{--deck:46vw}
     body{padding-left:var(--deck);padding-bottom:92px}
+    header{position:sticky;top:0;background:var(--bg);backdrop-filter:none}   /* sin blur: si no, la cabecera fija se anclaría a <header> */
+    .bar{
+      position:fixed;left:0;top:0;width:var(--deck);gap:6px;padding:4px 12px;
+      background:var(--bg);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    }
+    .brand{min-width:0;white-space:nowrap}
+    .brand span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+    .tabs{padding:10px 14px}
     .stage{
-      position:fixed;left:0;top:0;width:var(--deck);max-width:none;margin:0;
-      height:calc(100vh - var(--tbar, 124px));height:calc(100dvh - var(--tbar, 124px));
-      display:flex;flex-direction:column;justify-content:center;
+      position:fixed;left:0;top:var(--barh, 56px);width:var(--deck);max-width:none;margin:0;
+      height:var(--availh, calc(100vh - 152px));
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
       background:var(--bg);border-bottom:0;border-right:1px solid var(--line);
     }
     .stage .ratio,.stage.collapsed .ratio{aspect-ratio:16/9;height:auto;width:100%;flex:none}
     .stage .fold{display:none}
     .transport{right:auto;width:var(--deck);border-right:1px solid var(--line)}
+    .now{display:none}
+    li.song.on .rowtime{display:inline;color:var(--amber);font-weight:600;font-variant-numeric:tabular-nums}
+    li.song.on .rowtime:not(:empty)::after{content:" · ";color:var(--ink-2);font-weight:400}
     .fab{bottom:16px}
     .toast{left:calc(var(--deck) + (100vw - var(--deck)) / 2);bottom:84px}
     .sheet{left:var(--deck)}
-    header{position:sticky;top:0}
+    @supports (width:clamp(1px,2px,3px)){
+      /* pantalla baja: la columna se estrecha hasta el ancho del vídeo y la lista gana sitio */
+      :root{--deck:clamp(var(--deckmin), calc(var(--availh, 208px) * 16 / 9), 46vw)}
+      .stage .ratio,.stage.collapsed .ratio{width:min(100%, calc(var(--availh, 208px) * 16 / 9))}
+    }
+  }
+  /* horizontal y baja (coche, móvil girado): el contador no cabe junto a los iconos; ya sale en la pestaña de la lista */
+  @media (orientation:landscape) and (min-width:640px) and (max-height:500px){
+    .brand span{display:none}
   }
   /* pantallas táctiles grandes (coche): zonas de pulsación mayores */
   @media (orientation:landscape) and (min-width:640px) and (pointer:coarse){
@@ -562,6 +587,15 @@ function renderTabs(){
   t.appendChild(add);
 }
 
+/* tiempo transcurrido: barra de controles (vertical) y fila de la canción que suena (horizontal) */
+let timeTxt = '';
+function setTime(txt){
+  timeTxt = txt;
+  $('#nowTime').textContent = txt;
+  const el = document.querySelector('li.song.on .rowtime');
+  if(el) el.textContent = txt;
+}
+
 function renderList(){
   const ul = $('#list');
   ul.innerHTML = '';
@@ -598,6 +632,11 @@ function renderList(){
     const t = document.createElement('div'); t.className='t'; t.textContent = s.title || 'Cargando título…';
     const a = document.createElement('div'); a.className='a';
     a.textContent = s.bad ? 'No se puede reproducir aquí' : (artistOf(s) + (S.searchAll && $('#q').value.trim() ? ' · ' + (listById(listId)||{}).name : ''));
+    if(cur && cur.songId===s.id && cur.listId===listId && !s.bad){
+      /* tiempo de la canción que suena; solo se ve en horizontal (CSS .rowtime) */
+      const rt = document.createElement('span'); rt.className = 'rowtime'; rt.textContent = timeTxt;
+      a.prepend(rt);
+    }
     meta.append(t,a);
 
     const star = document.createElement('button');
@@ -702,6 +741,7 @@ function play(ref, time){
   S.resume = {listId:ref.listId, songId:ref.songId, time:time||0};
   save();
   paintNow(s);
+  setTime(fmt(time||0));
   renderList();
   showStage();
   if(!ready || !player){ pending = {ref, time}; return; }
@@ -771,7 +811,7 @@ setInterval(()=>{
   const pct = Math.min(1, t/d);
   $('#seek').value = Math.round(pct*1000);
   $('#fill').style.width = (pct*100) + '%';
-  $('#nowTime').textContent = fmt(t) + ' / ' + fmt(d);
+  setTime(fmt(t) + ' / ' + fmt(d));
   if(cur && Date.now() - saveTick > 5000){
     saveTick = Date.now();
     S.resume = {listId:cur.listId, songId:cur.songId, time:Math.floor(t)};
@@ -1240,9 +1280,17 @@ window.addEventListener('resize', stageTop);
 /* alto real de la barra del reproductor: el hueco inferior de la lista, el botón "Añadir"
    y los avisos se colocan con esta medida (cambia con el tamaño de letra del móvil) */
 function barSize(){
-  document.documentElement.style.setProperty('--tbar', document.querySelector('.transport').offsetHeight + 'px');
+  const de = document.documentElement.style;
+  const tb = document.querySelector('.transport').offsetHeight, bh = document.querySelector('.bar').offsetHeight;
+  de.setProperty('--tbar', tb + 'px');
+  /* en horizontal: alto de la cabecera de la columna izquierda y hueco que queda para el vídeo */
+  de.setProperty('--barh', bh + 'px');
+  de.setProperty('--availh', Math.max(120, window.innerHeight - tb - bh) + 'px');
 }
-if('ResizeObserver' in window) new ResizeObserver(barSize).observe(document.querySelector('.transport'));
+if('ResizeObserver' in window){
+  const ro = new ResizeObserver(barSize);
+  ro.observe(document.querySelector('.transport')); ro.observe(document.querySelector('.bar'));
+}
 window.addEventListener('resize', barSize);
 
 /* ---------- Arranque ---------- */
@@ -1262,7 +1310,8 @@ if(S.resume){
     paintNow(s);
     buildQueue(cur.listId, cur.songId);
     const min = Math.floor(S.resume.time/60), sec = S.resume.time%60;
-    $('#nowTime').textContent = fmt(S.resume.time);
+    setTime(fmt(S.resume.time));
+    renderList();   /* marca en la lista la canción en la que te quedaste */
     $('#btnPlay').onclick = function once(){
       $('#btnPlay').onclick = toggle;
       play(cur, S.resume.time);
