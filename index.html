@@ -208,8 +208,13 @@
     grid-template-areas:"hdr hdr" "lpane stage" "lpane trans";
   }
   body.land header{grid-area:hdr;position:static}
-  body.land .bar{padding:6px 12px 4px}
-  body.land .tabs{padding-bottom:6px}
+  /* cabecera compacta: marca · pestañas · botones en una sola fila */
+  body.land header{display:flex;align-items:center;gap:6px;padding:4px 12px}
+  body.land .bar{display:contents}
+  body.land .bar .grow,body.land .brand span{display:none}
+  body.land .brand{order:0;font-size:18px}
+  body.land .tabs{order:1;flex:1;min-width:0;padding:0 4px}
+  body.land .icon-btn{order:2;width:40px;height:40px}
   body.land .stage{grid-area:stage;position:relative;top:auto;align-self:start}
   body.land .lpane{grid-area:lpane;contain:size;display:flex;flex-direction:column;min-height:0;min-width:0}
   body.land .search{padding:8px 12px 4px}
