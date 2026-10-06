@@ -1,0 +1,48 @@
+<!doctype html><meta charset="utf-8">
+<style>
+:root{--bg:#0f1721;--bg2:#141f2b;--s:#1a2836;--line:#2b3d4d;--ink:#e9f0f7;--ink2:#8fa3b5;--amber:#ffb020}
+*{box-sizing:border-box}body{margin:0;background:#070b10;color:var(--ink);font:12px system-ui,Segoe UI,sans-serif;padding:14px;width:1000px}
+h3{margin:14px 0 6px;font-size:14px}h3 span{color:var(--ink2);font-weight:400}
+.scr{width:960px;height:360px;background:var(--bg);border:2px solid #3a4b5c;border-radius:14px;display:grid;gap:6px;padding:6px;position:relative}
+.z{border:1.5px dashed var(--line);border-radius:8px;background:var(--bg2);padding:6px;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden;position:relative}
+.z>b{font-size:10px;letter-spacing:.08em;color:var(--amber);text-transform:uppercase}
+.row{display:flex;align-items:center;gap:6px;background:var(--s);border-radius:6px;padding:4px 6px;font-size:11px;flex:none}
+.row i{width:22px;height:22px;border-radius:4px;background:#2a3d4e;flex:none}
+.row.on{border-left:3px solid var(--amber)}
+.vid{flex:1;background:#0d111c url(../../icons/icon-512.png) center/auto 100% no-repeat;border-radius:6px;min-height:0}
+.pill{padding:4px 10px;border-radius:99px;background:var(--s);border:1px solid var(--line);font-size:11px;flex:none}
+.pill.on{background:var(--amber);color:#181203;border-color:var(--amber)}
+.ctr{display:flex;align-items:center;justify-content:center;gap:10px}
+.ib{width:30px;height:30px;border-radius:8px;background:var(--s);display:grid;place-items:center;color:var(--ink2);font-size:13px}
+.disc{width:46px;height:46px;border-radius:50%;border:2px solid #ff8a3a;background:url(../../icons/icon-512.png) center 48%/230%;box-shadow:0 0 12px rgba(255,120,30,.5)}
+.seek{height:3px;background:var(--line);position:relative;flex:none}.seek::after{content:"";position:absolute;left:0;top:0;height:3px;width:38%;background:var(--amber)}
+.tag{position:absolute;right:8px;bottom:6px;font-size:10px;color:var(--ink2)}
+.in{height:24px;background:var(--s);border:1px solid var(--line);border-radius:6px;flex:none;color:#6c7e8f;padding:4px 6px;font-size:11px}
+/* A */ .A{grid-template-columns:23% 1fr 33%;grid-template-rows:1fr}
+/* B */ .B{grid-template-columns:1fr 44%;grid-template-rows:auto 1fr}.B .z1{grid-row:1/3}
+/* C */ .C{grid-template-columns:24% 1fr 30%}
+.big{height:70px;font-size:14px}
+.big .ib{width:56px;height:56px;font-size:22px}.big .disc{width:84px;height:84px}
+</style>
+<div id="r"></div>
+<script>
+const rows=(n,on=1)=>['Queen - Bohemian Rhapsody','Highway to Hell','Hotel California','Como la flor','Thunderstruck','Zombie','Wonderwall'].slice(0,n).map((t,i)=>`<div class="row ${i==on?'on':''}"><i></i>${t}</div>`).join('');
+const ctr=(big)=>`<div class="ctr ${big?'big':''}"><div class="ib">⇄</div><div class="ib">⏮</div><div class="disc"></div><div class="ib">⏭</div><div class="ib">↻</div></div>`;
+const now=`<div class="row" style="background:none;padding:0;justify-content:space-between"><b style="font-size:12px">Queen - Bohemian Rhapsody</b><span style="color:#8fa3b5">2:14 / 5:55</span></div><div class="seek"></div>`;
+const A=`<div class="scr A">
+ <div class="z"><b>1 · Listas y búsqueda</b><div class="row"><i style="background:#c0392b"></i>MkMusic &nbsp;☁ ⚙</div><span class="pill on">Rock · 6</span><span class="pill">Pop · 3</span><span class="pill">★ 4</span><span class="pill">＋ Lista</span><div class="in">Canción o grupo</div><span class="pill">Todas</span><span class="pill on" style="margin-top:auto">🔎 Buscar en YouTube</span></div>
+ <div class="z"><b>2 · Reproductor</b><div class="vid"></div>${now}${ctr()}</div>
+ <div class="z"><b>3 · Canciones</b>${rows(7)}<span class="tag">＋ Añadir</span></div></div>`;
+const B=`<div class="scr B">
+ <div class="z z1"><b>1 · Vídeo + controles</b><div class="vid"></div>${now}${ctr()}</div>
+ <div class="z" style="flex-direction:row;align-items:center;gap:5px"><b>2 · Listas</b><span class="pill on">Rock · 6</span><span class="pill">Pop · 3</span><span class="pill">★</span><span class="pill">＋</span><span style="flex:1"></span><span class="pill">🔎</span><span class="pill">☁</span></div>
+ <div class="z"><b>3 · Canciones</b>${rows(6)}<span class="tag">＋ Añadir</span></div></div>`;
+const C=`<div class="scr C">
+ <div class="z"><b>1 · Ahora suena</b><div class="vid" style="max-height:130px"></div><b style="color:#e9f0f7;font-size:12px;letter-spacing:0;text-transform:none">Queen - Bohemian Rhapsody</b><span style="color:#8fa3b5">Queen</span><div class="seek"></div><span style="color:#8fa3b5">2:14 / 5:55</span></div>
+ <div class="z" style="justify-content:center;gap:12px"><b>2 · Controles grandes</b>${ctr(true)}<div class="ctr"><span class="pill on">Rock</span><span class="pill">Pop</span><span class="pill">★</span></div></div>
+ <div class="z"><b>3 · A continuación</b>${rows(5,0).replace(/class="row/g,'class="row big').replace(/<div class="row big/g,'<div style="height:34px;font-size:12px" class="row')}</div></div>`;
+document.getElementById('r').innerHTML=
+ `<h3>A · Tres columnas <span>— listas | reproductor | canciones. Todo a la vista, ideal parado o de copiloto</span></h3>${A}`+
+ `<h3>B · Dos zonas <span>— vídeo grande a la izquierda, listas + canciones a la derecha. La más parecida a la app actual</span></h3>${B}`+
+ `<h3>C · Modo conducción <span>— controles enormes, sin teclado ni búsqueda, solo la cola "a continuación"</span></h3>${C}`;
+</script>
