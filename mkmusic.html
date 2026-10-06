@@ -198,6 +198,27 @@
     opacity:0;pointer-events:none;transition:opacity .2s
   }
   .toast.on{opacity:1}
+
+  /* ---------- Disposición horizontal (coche) ---------- */
+  body.land{
+    padding:0;height:100vh;height:100dvh;overflow:hidden;
+    display:grid;
+    grid-template-columns:min(42vw, calc(46vh * 16 / 9)) 1fr;
+    grid-template-rows:auto auto minmax(0,1fr);
+    grid-template-areas:"hdr hdr" "stage search" "trans list";
+  }
+  body.land header{grid-area:hdr;position:static}
+  body.land .bar{padding:6px 12px 4px}
+  body.land .tabs{padding-bottom:6px}
+  body.land .stage{grid-area:stage;position:static;align-self:start}
+  body.land .search{grid-area:search;align-self:start;padding:8px 12px 4px}
+  body.land ul.songs{grid-area:list;overflow-y:auto;min-height:0;padding-bottom:70px}
+  body.land .transport{grid-area:trans;position:static;align-self:start;border-top:0;padding-top:2px}
+  body.land .ctrls button{height:48px;min-width:48px}
+  body.land .fab{bottom:14px;right:14px}
+  body.land .sheet{left:50%;right:auto;width:min(560px,96vw);transform:translate(-50%,100%);max-height:94vh}
+  body.land .sheet.on{transform:translate(-50%,0)}
+  body.land .toast{bottom:14px}
 </style>
 </head>
 <body>
@@ -206,6 +227,7 @@
   <div class="bar">
     <div class="brand"><i></i>Mkmusic <span id="count"></span></div>
     <div class="grow"></div>
+    <button class="icon-btn" id="btnLayout" title="Disposición: auto / vertical / horizontal">▯</button>
     <button class="icon-btn" id="btnWake" title="Mantener pantalla encendida">☀</button>
     <button class="icon-btn" id="btnCfg" title="Ajustes">⚙</button>
   </div>
@@ -317,7 +339,8 @@ function blank(){
     shuffle: false,
     repeat: 'all',            // 'off' | 'all' | 'one'
     resume: null,             // {listId, songId, time}
-    wake: false
+    wake: false,
+    layout: 'auto'            // 'auto' | 'port' | 'land'
   };
 }
 function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -874,6 +897,26 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='visible' && S.wake && document.body.classList.contains('playing')) wake(true);
 });
 
+
+/* disposición: vertical (móvil) / horizontal (coche) / auto según orientación */
+const LAYOUTS = ['auto','port','land'];
+const LAYOUT_ICON = {auto:'◐', port:'▯', land:'▭'};
+const LAYOUT_NAME = {auto:'Automática (según la pantalla)', port:'Vertical (móvil)', land:'Horizontal (coche)'};
+const landMQ = window.matchMedia('(orientation: landscape)');
+function applyLayout(){
+  const l = LAYOUTS.includes(S.layout) ? S.layout : 'auto';
+  const land = l==='land' || (l==='auto' && landMQ.matches);
+  document.body.classList.toggle('land', land);
+  $('#btnLayout').textContent = LAYOUT_ICON[l];
+  stageTop();
+}
+$('#btnLayout').onclick = ()=>{
+  S.layout = LAYOUTS[(Math.max(0,LAYOUTS.indexOf(S.layout))+1) % LAYOUTS.length];
+  save(); applyLayout();
+  toast('Disposición: ' + LAYOUT_NAME[S.layout]);
+};
+(landMQ.addEventListener ? landMQ.addEventListener('change', applyLayout) : landMQ.addListener(applyLayout));
+
 /* buscador */
 let qT;
 $('#q').addEventListener('input', ()=>{ clearTimeout(qT); qT = setTimeout(renderList, 120); });
@@ -898,6 +941,7 @@ renderTabs();
 renderList();
 paintModes();
 stageTop();
+applyLayout();
 
 if(S.resume){
   const s = findSong(S.resume.listId, S.resume.songId);
