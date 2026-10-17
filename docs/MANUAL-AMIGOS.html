@@ -71,8 +71,9 @@
 <div class="box warn"><b>Importante:</b> YouTube obliga a que el vídeo se vea mientras suena y no permite saltarse sus anuncios. MkMusic no los quita; si quieres música sin anuncios necesitas YouTube Premium. Con la pantalla bloqueada el audio puede cortarse.</div>
 
 <h2>4 · Sincronizar con tu Google Drive (opcional)</h2>
+<p>La primera vez que abras la app te ofrecerá conectarte con Google. Si prefieres hacerlo más tarde, elige <i>Empezar sin conectar</i> y hazlo cuando quieras con el icono ☁.</p>
 <ol>
-  <li>Pulsa el icono <b>☁</b> de arriba y elige tu cuenta de Google.</li>
+  <li>Pulsa <b>Conectar con Google Drive</b> (o el icono <b>☁</b> de arriba) y elige tu cuenta de Google.</li>
   <li>Si aparece <b>«Google no ha verificado esta aplicación»</b>: es normal (la app es privada entre amigos). Pulsa <b>Configuración avanzada</b> → <b>Ir a MkMusic (no seguro)</b>.</li>
   <li>Marca el permiso <i>«Ver, crear y borrar sus propios datos de configuración en Drive»</i> y pulsa <b>Continuar</b>.</li>
   <li>Añade una canción: a los pocos segundos el ☁ se pone <b style="color:#15803d">verde</b>. Ya está guardado en tu Drive.</li>
@@ -87,19 +88,30 @@
 </table>
 <div class="box ok"><b>Solo se guarda un archivo</b> en una carpeta oculta de tu Drive. La app <b>no puede ver ni tocar</b> tus otros archivos, y nunca ve tu contraseña.</div>
 
-<h2>5 · Ajustes útiles (⚙)</h2>
+<h2>5 · Búsquedas ilimitadas con tu propia clave (opcional)</h2>
+<p>Iniciar sesión con Google <b>solo sirve para guardar tus listas</b>; no cambia quién paga las búsquedas. Las búsquedas de YouTube se pagan con una cuota diaria gratuita que, por defecto, <b>compartimos entre todos</b> (por eso hay un tope de pocas búsquedas nuevas al día por dispositivo). Pegar enlaces no gasta cuota. Si quieres buscar sin ese tope, crea tu propia clave gratuita (unos 5 minutos, una sola vez):</p>
+<ol>
+  <li>Entra en <b>console.cloud.google.com</b> con tu cuenta y crea un <b>proyecto nuevo</b> (nombre: MkMusic).</li>
+  <li>Menú <b>APIs y servicios → Biblioteca</b> → busca <b>YouTube Data API v3</b> → <b>Habilitar</b>.</li>
+  <li><b>APIs y servicios → Credenciales → Crear credenciales → Clave de API</b>. Copia la clave (empieza por <code>AIza…</code>).</li>
+  <li>Recomendado: en la clave → <i>Restricciones de API</i> → <i>Restringir clave</i> → marca solo <b>YouTube Data API v3</b> → Guardar.</li>
+  <li>En MkMusic: <b>⚙ Ajustes → Clave de YouTube propia</b> → pega la clave → Aceptar.</li>
+</ol>
+<div class="box">Tu clave se guarda <b>solo en este dispositivo</b> (no se sube a Drive). Cada dispositivo necesita pegarla una vez. Cuota gratuita de tu proyecto: unas 100 búsquedas nuevas al día, solo para ti. Para volver a la clave compartida, deja el campo vacío.</div>
+
+<h2>6 · Ajustes útiles (⚙)</h2>
 <ul>
   <li><b>Interfaz grande</b>: letras y botones más grandes (útil en pantallas pequeñas o lejanas, como la del coche).</li>
   <li><b>Pantalla horizontal</b>: si giras el dispositivo, el reproductor pasa a la izquierda y las listas a la derecha.</li>
   <li><b>Exportar / importar copia de seguridad</b>: guarda un archivo con tus listas. Hazlo de vez en cuando; <i>importar</i> sustituye lo que tengas.</li>
-  <li><b>Desconectar Google Drive</b> y <b>Privacidad y condiciones</b>.</li>
+  <li><b>Clave de YouTube propia</b> (sección 5), <b>Desconectar Google Drive</b> y <b>Privacidad y condiciones</b>.</li>
 </ul>
 
-<h2>6 · Problemas frecuentes</h2>
+<h2>7 · Problemas frecuentes</h2>
 <table>
   <tr><th>Qué pasa</th><th>Qué hacer</th></tr>
   <tr><td>«Acceso bloqueado» o «Error 403: access_denied» al pulsar ☁</td><td>Tu Gmail aún no está autorizado. Dile a quien te pasó la app que lo añada.</td></tr>
-  <tr><td>La búsqueda dice que ya hiciste N búsquedas hoy</td><td>Hay un límite diario por dispositivo (se reparte entre todos los amigos). Mañana vuelve; mientras tanto pega enlaces o repite búsquedas ya hechas.</td></tr>
+  <tr><td>La búsqueda dice que ya hiciste N búsquedas hoy</td><td>Hay un límite diario por dispositivo (la cuota se comparte entre todos). Mañana vuelve; mientras tanto pega enlaces, repite búsquedas ya hechas o crea tu propia clave (sección 5).</td></tr>
   <tr><td>«Ese vídeo no permite reproducirse fuera de YouTube»</td><td>El dueño del vídeo lo prohíbe. La app lo marca y salta al siguiente. Busca otra versión de la canción.</td></tr>
   <tr><td>El ☁ está amarillo al abrir la app</td><td>Normal: tócalo una vez por sesión para reconectar (el acceso dura 1 hora).</td></tr>
   <tr><td>No veo los cambios nuevos de la app</td><td>Cierra la app del todo y ábrela otra vez (o en el navegador, Ctrl+F5).</td></tr>
@@ -107,7 +119,7 @@
   <tr><td>Se me borró todo</td><td>Si sincronizabas: pulsa ☁ y vuelven desde Drive. Si no: Ajustes → Importar copia de seguridad.</td></tr>
 </table>
 
-<h2>7 · Privacidad en 30 segundos</h2>
+<h2>8 · Privacidad en 30 segundos</h2>
 <ul>
   <li>Tus listas se guardan en tu dispositivo y, si lo activas, en <b>tu</b> Drive. No hay servidor, ni anuncios, ni rastreadores.</li>
   <li>Para quitar el permiso: <b>myaccount.google.com/permissions</b> → MkMusic → <i>Dejar de permitir</i>, o en la app Ajustes → <i>Desconectar Google Drive</i>.</li>

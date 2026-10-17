@@ -17,6 +17,9 @@ Límite: 100 usuarios en modo prueba. Para quitar a alguien, bórralo de la list
 - Regla práctica: `amigos × dispositivos × tope ≤ 100`. Con más de 5 dispositivos activos, baja el valor a 10.
 - Para ver el consumo: Cloud Console → APIs y servicios → YouTube Data API v3 → Cuotas. Se renueva a medianoche (hora del Pacífico).
 
+### Aclaración importante: iniciar sesión con Google NO reparte la cuota
+La cuota de YouTube se cobra al **proyecto de Google Cloud dueño de la clave**, no al usuario que inicia sesión. Conectar Drive solo decide dónde se guardan las listas. Para que un amigo no consuma tu cuota, debe usar **su propia clave** (Ajustes → *Clave de YouTube propia*; pasos en la sección 5 del manual). Su clave se guarda solo en su dispositivo y, si la tiene, no se le aplica el tope diario. Sin clave propia, usa la tuya con el tope.
+
 ## Comprobaciones de seguridad (hazlas una vez)
 - **API key**: Credenciales → tu clave → *Restricciones de aplicaciones* = Sitios web `https://fmecap-bit.github.io/*`; *Restricciones de API* = solo YouTube Data API v3. Si no estaba así, restríngela (o crea otra y cambia `config.js`).
 - El Client ID (`config.js`) es público por diseño; no hay ningún secreto en el repositorio.

@@ -399,6 +399,15 @@
   </div>
 </div>
 
+<!-- Bienvenida (primer uso) -->
+<div class="sheet" id="sheetWelcome">
+  <h2>Bienvenido a MkMusic</h2>
+  <p class="hint">Conecta tu cuenta de Google para guardar tus listas en tu Drive y tenerlas en todos tus dispositivos. Se guarda <b>un solo archivo oculto</b>: la app no ve tus demás archivos ni tu contraseña.</p>
+  <p class="hint">Si Google dice «app no verificada», pulsa <i>Configuración avanzada → Ir a MkMusic</i>. Si dice «acceso bloqueado», pide que te den de alta.</p>
+  <button class="btn primary" id="wGo" style="width:100%;margin-bottom:8px">☁ Conectar con Google Drive</button>
+  <button class="btn" id="wSkip" style="width:100%">Empezar sin conectar</button>
+</div>
+
 <!-- Buscar en YouTube -->
 <div class="sheet" id="sheetSearch">
   <div class="sheet-head">
@@ -448,6 +457,7 @@
   <h2>Ajustes</h2>
   <p class="hint" id="cfgInfo"></p>
   <button class="menu-item" id="cBig"><span class="k">🔍</span><span></span></button>
+  <button class="menu-item" id="cKey"><span class="k">🔑</span><span></span></button>
   <button class="menu-item" id="cRename"><span class="k">✎</span><span>Renombrar esta lista</span></button>
   <button class="menu-item" id="cOff"><span class="k">☁</span><span>Desconectar Google Drive</span></button>
   <button class="menu-item" id="cPriv"><span class="k">ⓘ</span><span>Privacidad y condiciones</span></button>
@@ -961,7 +971,13 @@ $('#doAdd').onclick = ()=>{
    Coste: 100 uds por búsqueda de las 10 000 diarias → ~100 búsquedas/día.
    Se cachean 24 h y solo se busca al pulsar Buscar/Enter.
    ========================================================= */
-const YT_KEY = (window.MK_CONFIG && MK_CONFIG.YOUTUBE_API_KEY) || '';
+/* Clave de YouTube: la propia del usuario (Ajustes) tiene prioridad; si no, la compartida de config.js.
+   La cuota se cobra al proyecto de Google dueño de la clave, no al usuario que inicia sesión. */
+const OWNKEY = 'mkmusic.ytkey';
+const ownKey = () => { try{ return localStorage.getItem(OWNKEY) || ''; }catch(e){ return ''; } };
+const YT_KEY_RE = /^AIza[\w-]{35}$/;
+const sharedKey = () => (window.MK_CONFIG && MK_CONFIG.YOUTUBE_API_KEY) || '';
+const ytKey = () => ownKey() || sharedKey();
 const SC_KEY = 'mkmusic.sc', SC_TTL = 24*3600*1000;
 const decodeHtml = s => { const x = document.createElement('textarea'); x.innerHTML = s; return x.value; };
 const targetList = () => S.active === FAVVIEW ? S.lists[0] : listById(S.active);
@@ -991,10 +1007,10 @@ function sqBump(){ try{ localStorage.setItem(SQ_KEY, JSON.stringify({d:dayKey(),
 async function ytSearch(q, musicOnly){
   const k = norm(q) + '|' + (musicOnly?1:0);
   const hit = cacheGet(k); if(hit) return hit;
-  if(sqUsed() >= SQ_MAX){ const e = new Error('limite'); e.reason = 'localLimit'; throw e; }
+  if(!ownKey() && sqUsed() >= SQ_MAX){ const e = new Error('limite'); e.reason = 'localLimit'; throw e; }
   const u = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=15' +
     (musicOnly ? '&videoCategoryId=10' : '') +
-    '&fields=items(id/videoId,snippet(title,channelTitle))&q=' + encodeURIComponent(q) + '&key=' + YT_KEY;
+    '&fields=items(id/videoId,snippet(title,channelTitle))&q=' + encodeURIComponent(q) + '&key=' + ytKey();
   const r = await fetch(u);
   const j = await r.json().catch(()=>({}));
   if(!r.ok){
@@ -1036,7 +1052,7 @@ async function runSearch(){
   const q = $('#ysQ').value.trim(); if(!q) return;
   S.musicOnly = $('#ysMusic').checked; save();
   const box = $('#ysRes');
-  if(!YT_KEY){
+  if(!ytKey()){
     box.innerHTML = '<p class="hint">Falta la <b>API key de YouTube</b> en config.js (paso a paso en docs/GUIA.md, sección "Buscador de YouTube"). Mientras tanto puedes pegar enlaces.</p>';
     return;
   }
@@ -1047,7 +1063,7 @@ async function runSearch(){
     box.innerHTML = '';
     const p = document.createElement('p'); p.className = 'hint';
     p.textContent = e.reason === 'localLimit'
-      ? 'Hoy ya hiciste ' + SQ_MAX + ' búsquedas nuevas (el límite se reparte entre todos los usuarios). Mañana se renueva; mientras tanto pega enlaces o repite búsquedas ya hechas.'
+      ? 'Hoy ya hiciste ' + SQ_MAX + ' búsquedas nuevas (el límite se reparte entre todos los usuarios). Mañana se renueva. Para buscar sin este límite usa tu propia clave de YouTube (Ajustes → Clave de YouTube propia; guía en el manual). Mientras tanto pega enlaces o repite búsquedas ya hechas.'
       : quota
       ? 'Se agotó la cuota diaria de búsquedas de YouTube (se renueva a las 09:00 hora de España aprox.). Mientras tanto pega enlaces.'
       : 'No se pudo buscar: ' + e.message;
@@ -1055,7 +1071,7 @@ async function runSearch(){
   }
 }
 function openSearch(q){
-  $('#ysTarget').textContent = 'Se añadirán a la lista: ' + targetList().name + ' · Búsquedas nuevas hoy: ' + sqUsed() + '/' + SQ_MAX;
+  $('#ysTarget').textContent = 'Se añadirán a la lista: ' + targetList().name + (ownKey() ? ' · Usando tu clave de YouTube' : ' · Búsquedas nuevas hoy: ' + sqUsed() + '/' + SQ_MAX);
   $('#ysMusic').checked = S.musicOnly !== false;
   $('#ysRes').innerHTML = '';
   $('#ysQ').value = q || '';
@@ -1263,6 +1279,21 @@ $('#cOff').onclick = ()=>{
   Cloud.disconnect(); closeSheet(); toast('Drive desconectado.');
 };
 
+/* clave de YouTube propia */
+function paintKey(){ $('#cKey span:last-child').textContent = 'Clave de YouTube propia: ' + (ownKey() ? 'sí' : 'no'); }
+$('#cKey').onclick = ()=>{
+  const v = prompt('Pega tu clave de API de YouTube (empieza por AIza…).\nDéjalo vacío para volver a la clave compartida.', ownKey());
+  if(v === null) return;
+  const k = v.trim();
+  try{
+    if(!k){ localStorage.removeItem(OWNKEY); toast('Usando la clave compartida.'); }
+    else if(!YT_KEY_RE.test(k)){ toast('Esa clave no tiene el formato correcto (AIza + 35 caracteres).'); return; }
+    else { localStorage.setItem(OWNKEY, k); toast('Clave guardada: tus búsquedas usan tu cuota.'); }
+  }catch(e){ toast('No se pudo guardar la clave.'); }
+  paintKey();
+};
+paintKey();
+
 /* interfaz grande */
 function paintBig(){
   document.documentElement.classList.toggle('big', !!S.big);
@@ -1270,6 +1301,16 @@ function paintBig(){
 }
 $('#cBig').onclick = ()=>{ S.big = !S.big; save(); paintBig(); stageTop(); };
 paintBig();
+
+/* bienvenida: solo en el primer uso y si hay Google configurado */
+function welcomeDone(){ S.welcomed = true; save(); closeSheet(); }
+$('#wGo').onclick = ()=>{ S.welcomed = true; save(); closeSheet(); Cloud.syncNow(); };
+$('#wSkip').onclick = welcomeDone;
+if(!S.welcomed){
+  const total = S.lists.reduce((n,l)=>n+l.songs.length,0);
+  if(total > 0 || Cloud.connected){ S.welcomed = true; }
+  else if(Cloud.configured) setTimeout(()=>openSheet('#sheetWelcome'), 600);
+}
 
 /* controles */
 $('#btnPlay').onclick = toggle;
