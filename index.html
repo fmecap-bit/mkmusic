@@ -123,6 +123,9 @@
   .res .meta{flex:1;min-width:0}
   .addb{width:42px;height:42px;border-radius:10px;background:var(--amber);color:#181203;font-weight:800;font-size:18px;flex:none}
   .addb.done{background:var(--surface-2);color:var(--ok)}
+  .steps{padding-left:20px;margin:0 0 12px;font-size:14px}
+  .steps li{margin:8px 0;color:var(--ink)}
+  .steps .btn{display:block;margin-top:6px;text-decoration:none;padding:10px;font-size:14px;color:var(--amber)}
   .linkbtn{margin-top:12px;padding:10px 16px;border-radius:999px;background:var(--amber);color:#181203;font-weight:700}
 
   /* ---------- Lista ---------- */
@@ -408,6 +411,27 @@
   <button class="btn" id="wSkip" style="width:100%">Empezar sin conectar</button>
 </div>
 
+<!-- Asistente: clave propia de YouTube -->
+<div class="sheet" id="sheetKey">
+  <div class="sheet-head">
+    <h2>Tu propia clave de YouTube</h2>
+    <button class="btn ok" data-close>Ahora no</button>
+  </div>
+  <p class="hint">Conectar Google guarda tus listas. Para que tus <b>búsquedas</b> no dependan de la cuota compartida, crea tu propia clave gratuita (5 min, una sola vez). Se guarda en tu Drive y la tendrás en todos tus dispositivos.</p>
+  <ol class="steps">
+    <li>Crea un proyecto gratuito.<a class="btn" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">1 · Abrir Google Cloud</a></li>
+    <li>Activa «YouTube Data API v3» (botón Habilitar).<a class="btn" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">2 · Activar la API</a></li>
+    <li>Crear credenciales → <b>Clave de API</b> y copia la clave.<a class="btn" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">3 · Crear la clave</a></li>
+    <li>Pégala aquí:</li>
+  </ol>
+  <input type="text" id="keyIn" placeholder="AIza…" autocomplete="off" spellcheck="false">
+  <div class="row">
+    <button class="btn primary" id="keySave">Probar y guardar</button>
+    <button class="btn" id="keyDel">Quitar mi clave</button>
+  </div>
+  <p class="hint" id="keyMsg" style="margin-top:10px"></p>
+</div>
+
 <!-- Buscar en YouTube -->
 <div class="sheet" id="sheetSearch">
   <div class="sheet-head">
@@ -523,6 +547,8 @@ function cleanDoc(d){
   d = d && typeof d==='object' ? d : {};
   return {
     v:SCHEMA, updatedAt:fin(d.updatedAt)||0, lists:cleanLists(d.lists),
+    ytKey:(d.ytKey && typeof d.ytKey==='object' && Number.isFinite(d.ytKey.at) && typeof d.ytKey.k==='string' &&
+           (d.ytKey.k==='' || YT_KEY_RE.test(d.ytKey.k))) ? {k:d.ytKey.k, at:d.ytKey.at} : undefined,
     deleted:(Array.isArray(d.deleted) ? d.deleted : [])
       .filter(x=>x && typeof x.k==='string' && x.k.length<=80 && Number.isFinite(x.at)).map(x=>({k:x.k, at:x.at}))
   };
@@ -975,6 +1001,14 @@ $('#doAdd').onclick = ()=>{
    La cuota se cobra al proyecto de Google dueño de la clave, no al usuario que inicia sesión. */
 const OWNKEY = 'mkmusic.ytkey';
 const ownKey = () => { try{ return localStorage.getItem(OWNKEY) || ''; }catch(e){ return ''; } };
+const ownKeyAt = () => { try{ return Number(localStorage.getItem(OWNKEY + '.at')) || 0; }catch(e){ return 0; } };
+/* k vacío = clave quitada (se anota con fecha para que el borrado también se sincronice) */
+function setOwnKey(k, at){
+  try{
+    if(k) localStorage.setItem(OWNKEY, k); else localStorage.removeItem(OWNKEY);
+    localStorage.setItem(OWNKEY + '.at', String(at));
+  }catch(e){}
+}
 const YT_KEY_RE = /^AIza[\w-]{35}$/;
 const sharedKey = () => (window.MK_CONFIG && MK_CONFIG.YOUTUBE_API_KEY) || '';
 const ytKey = () => ownKey() || sharedKey();
@@ -1250,12 +1284,14 @@ Cloud.init({
     Cloud.stamp(S);
     const lists = JSON.parse(JSON.stringify(S.lists));
     lists.forEach(l=>l.songs.forEach(s=>{ delete s.bad; }));
-    return {v:SCHEMA, updatedAt:Date.now(), lists, deleted:S.deleted.slice()};
+    return {v:SCHEMA, updatedAt:Date.now(), lists, deleted:S.deleted.slice(),
+            ytKey: ownKeyAt() ? {k:ownKey(), at:ownKeyAt()} : undefined};
   },
   clean: cleanDoc,
   applyDoc(doc){
     S.lists = doc.lists.length ? doc.lists : blank().lists;
     S.deleted = doc.deleted || [];
+    if(doc.ytKey && doc.ytKey.at > ownKeyAt()){ setOwnKey(doc.ytKey.k, doc.ytKey.at); paintKey(); }
     if(S.active !== FAVVIEW && !listById(S.active)) S.active = S.lists[0].id;
     try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
     renderTabs(); renderList();
@@ -1266,6 +1302,8 @@ Cloud.init({
     b.className = 'icon-btn ' + st;
     b.title = msg || (st==='syncing' ? 'Sincronizando…' : 'Sincronizar con Google Drive');
     if(st==='auth' && msg) toast(msg);
+    /* tras conectar Google por primera vez: asistente para la clave propia de YouTube (solo una vez) */
+    if(st==='ok' && !ownKey() && !ownKeyAt() && !S.keyAsked){ S.keyAsked = true; save(); setTimeout(openKeySheet, 900); }
   },
   toast
 });
@@ -1281,16 +1319,38 @@ $('#cOff').onclick = ()=>{
 
 /* clave de YouTube propia */
 function paintKey(){ $('#cKey span:last-child').textContent = 'Clave de YouTube propia: ' + (ownKey() ? 'sí' : 'no'); }
-$('#cKey').onclick = ()=>{
-  const v = prompt('Pega tu clave de API de YouTube (empieza por AIza…).\nDéjalo vacío para volver a la clave compartida.', ownKey());
-  if(v === null) return;
-  const k = v.trim();
-  try{
-    if(!k){ localStorage.removeItem(OWNKEY); toast('Usando la clave compartida.'); }
-    else if(!YT_KEY_RE.test(k)){ toast('Esa clave no tiene el formato correcto (AIza + 35 caracteres).'); return; }
-    else { localStorage.setItem(OWNKEY, k); toast('Clave guardada: tus búsquedas usan tu cuota.'); }
-  }catch(e){ toast('No se pudo guardar la clave.'); }
-  paintKey();
+async function testKey(k){
+  /* videos.list cuesta 1 unidad: valida la clave sin gastar apenas cuota */
+  let r;
+  try{ r = await fetch('https://www.googleapis.com/youtube/v3/videos?part=id&id=dQw4w9WgXcQ&key=' + encodeURIComponent(k)); }
+  catch(e){ return 'Sin conexión. Inténtalo de nuevo.'; }
+  if(r.ok) return null;
+  const j = await r.json().catch(()=>({})), e = j.error || {};
+  const reason = e.errors && e.errors[0] && e.errors[0].reason, msg = e.message || '';
+  if(reason === 'quotaExceeded') return null;                       // clave válida; hoy sin cuota
+  if(reason === 'keyInvalid') return 'La clave no es válida. Revisa que la copiaste entera.';
+  if(reason === 'accessNotConfigured' || /has not been used|is disabled/i.test(msg)) return 'La «YouTube Data API v3» aún no está activada en ese proyecto (paso 2). Si acabas de activarla, espera un minuto.';
+  if(reason === 'ipRefererBlocked' || /referer/i.test(msg)) return 'La clave está restringida a otros sitios web. Quita esa restricción o añade esta dirección.';
+  return msg || ('Error ' + r.status);
+}
+function openKeySheet(){
+  $('#keyIn').value = ownKey(); $('#keyMsg').textContent = '';
+  $('#keyDel').style.display = ownKey() ? '' : 'none';
+  openSheet('#sheetKey');
+}
+$('#cKey').onclick = openKeySheet;
+$('#keySave').onclick = async ()=>{
+  const k = $('#keyIn').value.trim(), m = $('#keyMsg');
+  if(!YT_KEY_RE.test(k)){ m.textContent = 'La clave debe empezar por AIza y tener 39 caracteres.'; return; }
+  m.textContent = 'Probando la clave…';
+  const err = await testKey(k);
+  if(err){ m.textContent = err; return; }
+  setOwnKey(k, Date.now()); Cloud.touch(); paintKey(); closeSheet();
+  toast('Clave guardada: tus búsquedas usan tu propia cuota.');
+};
+$('#keyDel').onclick = ()=>{
+  setOwnKey('', Date.now()); Cloud.touch(); paintKey(); closeSheet();
+  toast('Clave quitada: se usa la clave compartida.');
 };
 paintKey();
 
@@ -1309,7 +1369,7 @@ $('#wSkip').onclick = welcomeDone;
 if(!S.welcomed){
   const total = S.lists.reduce((n,l)=>n+l.songs.length,0);
   if(total > 0 || Cloud.connected){ S.welcomed = true; }
-  else if(Cloud.configured) setTimeout(()=>openSheet('#sheetWelcome'), 600);
+  else if(Cloud.configured && !/[?&](url|text)=/.test(location.search)) setTimeout(()=>openSheet('#sheetWelcome'), 600);
 }
 
 /* controles */
@@ -1400,6 +1460,18 @@ renderList();
 paintModes();
 paintStage();
 barSize();
+
+/* Compartir desde la app de YouTube (Android, app instalada): llega ?url=...&text=...
+   Solo se aceptan enlaces de YouTube, nunca palabras sueltas. No gasta cuota de la API. */
+(function handleShare(){
+  const q = new URLSearchParams(location.search);
+  const raw = [q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
+  if(!raw) return;
+  history.replaceState(null, '', location.pathname);
+  const links = (raw.match(/https?:\/\/\S+/g) || []).filter(u => /^https?:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\//i.test(u));
+  if(!links.length){ toast('Eso no es un enlace de YouTube.'); return; }
+  addSongs(links.join('\n'));
+})();
 
 if(S.resume){
   const s = findSong(S.resume.listId, S.resume.songId);

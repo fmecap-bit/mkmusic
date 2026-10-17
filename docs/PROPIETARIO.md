@@ -18,7 +18,9 @@ Límite: 100 usuarios en modo prueba. Para quitar a alguien, bórralo de la list
 - Para ver el consumo: Cloud Console → APIs y servicios → YouTube Data API v3 → Cuotas. Se renueva a medianoche (hora del Pacífico).
 
 ### Aclaración importante: iniciar sesión con Google NO reparte la cuota
-La cuota de YouTube se cobra al **proyecto de Google Cloud dueño de la clave**, no al usuario que inicia sesión. Conectar Drive solo decide dónde se guardan las listas. Para que un amigo no consuma tu cuota, debe usar **su propia clave** (Ajustes → *Clave de YouTube propia*; pasos en la sección 5 del manual). Su clave se guarda solo en su dispositivo y, si la tiene, no se le aplica el tope diario. Sin clave propia, usa la tuya con el tope.
+La cuota de YouTube se cobra al **proyecto de Google Cloud dueño de la clave**, no al usuario que inicia sesión. Conectar Drive solo decide dónde se guardan las listas. Para que un amigo no consuma tu cuota, debe usar **su propia clave** (Ajustes → *Clave de YouTube propia*; pasos en la sección 5 del manual). La app incluye un asistente que se abre tras conectar Google y la guarda en el Drive del propio usuario (así la tiene en todos sus dispositivos); con clave propia no se le aplica el tope diario. En Android también puede añadir canciones con **Compartir → MkMusic** desde la app de YouTube, sin clave ni cuota.
+
+**Por qué la app no crea la clave sola:** exigiría pedir a cada amigo el permiso `cloud-platform` (gestionar todo su Google Cloud, incluido borrarlo), Google obliga a aceptar sus condiciones a mano y crear un proyecto por usuario para repartir cuota probablemente incumple las políticas de la API de YouTube (no he podido comprobar el texto exacto). Por eso no está implementado. Sin clave propia, usa la tuya con el tope.
 
 ## Comprobaciones de seguridad (hazlas una vez)
 - **API key**: Credenciales → tu clave → *Restricciones de aplicaciones* = Sitios web `https://fmecap-bit.github.io/*`; *Restricciones de API* = solo YouTube Data API v3. Si no estaba así, restríngela (o crea otra y cambia `config.js`).

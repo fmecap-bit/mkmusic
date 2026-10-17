@@ -88,30 +88,34 @@
 </table>
 <div class="box ok"><b>Solo se guarda un archivo</b> en una carpeta oculta de tu Drive. La app <b>no puede ver ni tocar</b> tus otros archivos, y nunca ve tu contraseña.</div>
 
-<h2>5 · Búsquedas ilimitadas con tu propia clave (opcional)</h2>
-<p>Iniciar sesión con Google <b>solo sirve para guardar tus listas</b>; no cambia quién paga las búsquedas. Las búsquedas de YouTube se pagan con una cuota diaria gratuita que, por defecto, <b>compartimos entre todos</b> (por eso hay un tope de pocas búsquedas nuevas al día por dispositivo). Pegar enlaces no gasta cuota. Si quieres buscar sin ese tope, crea tu propia clave gratuita (unos 5 minutos, una sola vez):</p>
+<h2>5 · Buscar sin límites y añadir desde YouTube</h2>
+<h3>Compartir desde la app de YouTube (Android) — sin claves ni límites</h3>
+<p>Con MkMusic instalada: en la app de YouTube abre un vídeo → <b>Compartir</b> → elige <b>MkMusic</b>. La canción se añade a tu lista actual. No gasta cuota de búsquedas. (No disponible en iPhone ni en el PC.)</p>
+<h3>Tu propia clave de YouTube (opcional, para buscar dentro de la app)</h3>
+<p>Iniciar sesión con Google <b>solo sirve para guardar tus listas</b>; no cambia quién paga las búsquedas. Por defecto las búsquedas de YouTube usan una cuota diaria gratuita <b>compartida entre todos</b> (por eso hay un tope de pocas búsquedas nuevas al día por dispositivo). Si quieres buscar sin ese tope, crea tu clave gratuita; la app te guía:</p>
 <ol>
-  <li>Entra en <b>console.cloud.google.com</b> con tu cuenta y crea un <b>proyecto nuevo</b> (nombre: MkMusic).</li>
-  <li>Menú <b>APIs y servicios → Biblioteca</b> → busca <b>YouTube Data API v3</b> → <b>Habilitar</b>.</li>
-  <li><b>APIs y servicios → Credenciales → Crear credenciales → Clave de API</b>. Copia la clave (empieza por <code>AIza…</code>).</li>
-  <li>Recomendado: en la clave → <i>Restricciones de API</i> → <i>Restringir clave</i> → marca solo <b>YouTube Data API v3</b> → Guardar.</li>
-  <li>En MkMusic: <b>⚙ Ajustes → Clave de YouTube propia</b> → pega la clave → Aceptar.</li>
+  <li>Al conectar Google por primera vez se abre solo el <b>asistente «Tu propia clave de YouTube»</b> (o ⚙ Ajustes → <i>Clave de YouTube propia</i>).</li>
+  <li>Pulsa <b>1 · Abrir Google Cloud</b> y crea un proyecto nuevo (gratis, nombre MkMusic). La primera vez Google te pedirá aceptar sus condiciones.</li>
+  <li>Pulsa <b>2 · Activar la API</b> y, en la página que se abre, <b>Habilitar</b> «YouTube Data API v3».</li>
+  <li>Pulsa <b>3 · Crear la clave</b> → <i>Crear credenciales → Clave de API</i> → copia la clave (empieza por <code>AIza…</code>). Recomendado: restringe la clave solo a «YouTube Data API v3».</li>
+  <li>Pégala en la app y pulsa <b>Probar y guardar</b>. La app comprueba que funciona y te dice qué falta si no.</li>
 </ol>
-<div class="box">Tu clave se guarda <b>solo en este dispositivo</b> (no se sube a Drive). Cada dispositivo necesita pegarla una vez. Cuota gratuita de tu proyecto: unas 100 búsquedas nuevas al día, solo para ti. Para volver a la clave compartida, deja el campo vacío.</div>
+<div class="box">La clave se guarda en <b>tu propio Drive</b> (el mismo archivo oculto), así que solo la pegas una vez y aparece en tus otros dispositivos. Tu cuota gratuita: unas 100 búsquedas nuevas al día, solo para ti. Para volver a la clave compartida: <i>Quitar mi clave</i>.</div>
+<div class="box warn">La app <b>no puede crear la clave por ti</b>: eso exigiría darle permiso para gestionar todo tu Google Cloud, y no lo pide.</div>
 
 <h2>6 · Ajustes útiles (⚙)</h2>
 <ul>
   <li><b>Interfaz grande</b>: letras y botones más grandes (útil en pantallas pequeñas o lejanas, como la del coche).</li>
   <li><b>Pantalla horizontal</b>: si giras el dispositivo, el reproductor pasa a la izquierda y las listas a la derecha.</li>
   <li><b>Exportar / importar copia de seguridad</b>: guarda un archivo con tus listas. Hazlo de vez en cuando; <i>importar</i> sustituye lo que tengas.</li>
-  <li><b>Clave de YouTube propia</b> (sección 5), <b>Desconectar Google Drive</b> y <b>Privacidad y condiciones</b>.</li>
+  <li><b>Clave de YouTube propia</b> (asistente de la sección 5), <b>Desconectar Google Drive</b> y <b>Privacidad y condiciones</b>.</li>
 </ul>
 
 <h2>7 · Problemas frecuentes</h2>
 <table>
   <tr><th>Qué pasa</th><th>Qué hacer</th></tr>
   <tr><td>«Acceso bloqueado» o «Error 403: access_denied» al pulsar ☁</td><td>Tu Gmail aún no está autorizado. Dile a quien te pasó la app que lo añada.</td></tr>
-  <tr><td>La búsqueda dice que ya hiciste N búsquedas hoy</td><td>Hay un límite diario por dispositivo (la cuota se comparte entre todos). Mañana vuelve; mientras tanto pega enlaces, repite búsquedas ya hechas o crea tu propia clave (sección 5).</td></tr>
+  <tr><td>La búsqueda dice que ya hiciste N búsquedas hoy</td><td>Hay un límite diario por dispositivo (la cuota se comparte entre todos). Mañana vuelve; mientras tanto comparte desde YouTube, pega enlaces, repite búsquedas ya hechas o crea tu propia clave (sección 5).</td></tr>
   <tr><td>«Ese vídeo no permite reproducirse fuera de YouTube»</td><td>El dueño del vídeo lo prohíbe. La app lo marca y salta al siguiente. Busca otra versión de la canción.</td></tr>
   <tr><td>El ☁ está amarillo al abrir la app</td><td>Normal: tócalo una vez por sesión para reconectar (el acceso dura 1 hora).</td></tr>
   <tr><td>No veo los cambios nuevos de la app</td><td>Cierra la app del todo y ábrela otra vez (o en el navegador, Ctrl+F5).</td></tr>

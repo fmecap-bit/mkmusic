@@ -56,11 +56,13 @@ const Cloud = (() => {
       if(other) other.songs.forEach(take);
       lists.push({ id, name: base.name, u: Math.max(la ? la.u||0 : 0, lb ? lb.u||0 : 0), songs: [...songs.values()] });
     }
-    return { v: 2, updatedAt: Math.max(a.updatedAt||0, b.updatedAt||0), lists,
+    const ka = a.ytKey, kb = b.ytKey;                       // clave de YouTube propia: gana la más reciente
+    const ytKey = !ka ? kb : !kb ? ka : (kb.at >= ka.at ? kb : ka);
+    return { v: 2, updatedAt: Math.max(a.updatedAt||0, b.updatedAt||0), lists, ytKey,
              deleted: [...dead].map(([k, at]) => ({k, at})) };
   }
 
-  const canon = d => JSON.stringify([d.lists, (d.deleted||[]).map(x => x.k + x.at).sort()]);
+  const canon = d => JSON.stringify([d.lists, (d.deleted||[]).map(x => x.k + x.at).sort(), d.ytKey ? d.ytKey.k + d.ytKey.at : '']);
 
   /* Marca como modificado (u = ahora) lo que cambió desde la última vez.
      Devuelve true si hubo cambios que subir. */

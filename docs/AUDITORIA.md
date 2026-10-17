@@ -38,6 +38,9 @@ Alcance: `index.html`, `sync.js`, `sw.js`, `config.js`, manifiesto y páginas au
 | B4 | Lista completa en el DOM (sin virtualizar): 3 000 canciones se pintan en 90 ms; correcto hasta ~10 000. | Aceptado. |
 | B5 | Solo en español; no probado en iPhone. | Aceptado / pendiente de prueba real. |
 
+## Decisiones posteriores a la auditoría
+- **Creación automática de la clave de YouTube: rechazada.** Requiere el permiso `cloud-platform` (gestionar y borrar todo el Google Cloud del usuario), la aceptación manual de términos de Google y, además, el patrón «un proyecto por usuario para repartir la cuota» probablemente contraviene las políticas de YouTube API Services. Sustituida por: asistente guiado con prueba de la clave, clave sincronizada en el Drive del usuario y «Compartir desde YouTube» (Android) sin cuota.
+
 ## Lo que está bien
 - Todo texto de terceros se inserta con `textContent`; los `innerHTML` son cadenas fijas.
 - Token de Google solo en memoria; scope mínimo (`drive.appdata`).
