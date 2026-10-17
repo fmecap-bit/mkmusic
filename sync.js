@@ -14,7 +14,7 @@ const Cloud = (() => {
   const GRACE = 90 * 24 * 3600 * 1000;       // las lápidas se conservan 90 días
   const clientId = () => (window.MK_CONFIG && MK_CONFIG.GOOGLE_CLIENT_ID) || '';
 
-  let hooks = { getDoc(){}, applyDoc(){}, onStatus(){}, toast(){} };
+  let hooks = { getDoc(){}, applyDoc(){}, onStatus(){}, toast(){}, clean: null };
   let token = null, expires = 0, fileId = null, tokenClient = null, gisP = null;
   let state = 'off', timer = null, busy = false, again = false, lastPull = 0;
 
@@ -174,7 +174,8 @@ const Cloud = (() => {
       await getToken(!!interactive);
       if(!fileId) fileId = await findFile();
       let local = hooks.getDoc();
-      const remote = fileId ? await download(fileId) : null;
+      let remote = fileId ? await download(fileId) : null;
+      if(remote && hooks.clean) remote = hooks.clean(remote);   // se valida lo que llega de Drive
       if(remote && remote.lists && pristine(local)) local = { v: 2, updatedAt: 0, lists: [], deleted: [] };
       const merged = mergeDocs(local, remote);
       hooks.applyDoc(merged);
